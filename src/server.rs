@@ -327,8 +327,7 @@ impl ServerData {
     pub async fn check_upcoming_event(&mut self) {
         let mut events = vec![];
         let mut unchecked_video_ids = vec![];
-        let mut first_video_after_all_stream_map: HashMap<String, (String, DateTime<Utc>)> =
-            HashMap::new();
+        let mut first_video_after_all_stream_map: HashMap<String, String> = HashMap::new();
         for c in self.yt_channels.values() {
             //match get_playlist_items(
             //    &c.upload_playlist,
@@ -380,28 +379,12 @@ impl ServerData {
                 for v in resp {
                     if let Some(snippet) = &v.snippet {
                         if snippet.liveBroadcastContent == "none" {
-                            match DateTime::<Utc>::from_str(&snippet.publishedAt) {
-                                Ok(published_at) => {
-                                    if let Some(current) =
-                                        first_video_after_all_stream_map.get_mut(&snippet.channelId)
-                                    {
-                                        if current.1 < published_at {
-                                            *current = (v.id.clone(), published_at);
-                                        }
-                                    } else {
-                                        first_video_after_all_stream_map.insert(
-                                            snippet.channelId.clone(),
-                                            (v.id.clone(), published_at),
-                                        );
-                                    }
-                                }
-                                Err(e) => {
-                                    log::error!(
-                                        "Parse VideoResource.snippet.publishedAt failed: {}",
-                                        e
-                                    )
-                                }
+                            if !first_video_after_all_stream_map.contains_key(&snippet.channelId) {
+                                first_video_after_all_stream_map
+                                    .insert(snippet.channelId.clone(), v.id.clone());
                             }
+                        } else {
+                            first_video_after_all_stream_map.remove(&snippet.channelId);
                         }
                     }
                     match UpcomingEvent::try_from(&v) {
@@ -424,7 +407,7 @@ impl ServerData {
 
         first_video_after_all_stream_map
             .into_iter()
-            .for_each(|(channel_id, (video_id, _))| {
+            .for_each(|(channel_id, video_id)| {
                 if let Some(c) = self.yt_channels.get_mut(&channel_id) {
                     c.first_video_after_all_stream = video_id;
                 }
