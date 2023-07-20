@@ -1,6 +1,4 @@
-use std::{
-    collections::HashMap, net::SocketAddr, ops::Add, str::FromStr, sync::Arc, time::Duration,
-};
+use std::{collections::HashMap, net::SocketAddr, str::FromStr, sync::Arc, time::Duration};
 
 use crate::yt_api::{structs::*, *};
 use chrono::{DateTime, Utc};
@@ -410,6 +408,11 @@ impl ServerData {
                         Ok(e) => events.push(e),
                         Err(e) => match e {
                             ConvertToUpcomingEventError::AlreadyDone(_) => {}
+                            ConvertToUpcomingEventError::MissingInformation(msg) => {
+                                if msg != "liveStreamingDetails" {
+                                    log::error!("Convert video {} to event failed: MissingInformation(\"{}\")", v.id, msg);
+                                }
+                            }
                             _ => {
                                 log::error!("Convert video {} to event failed: {:?}", v.id, e)
                             }
@@ -475,6 +478,11 @@ impl ServerData {
                         Ok(e) => self.events.push(e),
                         Err(e) => match e {
                             ConvertToUpcomingEventError::AlreadyDone(_) => {}
+                            ConvertToUpcomingEventError::MissingInformation(msg) => {
+                                if msg != "liveStreamingDetails" {
+                                    log::error!("Convert video {} to event failed: MissingInformation(\"{}\")", v.id, msg);
+                                }
+                            }
                             _ => {
                                 log::error!("Convert video {} to event failed: {:?}", v.id, e)
                             }
