@@ -226,6 +226,7 @@ impl UpcomingEvent {
         builder.description(&format!("{}\n\n{}", self.target_url, self.description));
         builder.starts(self.schedule_date);
         builder.ends(self.schedule_date + chrono::Duration::hours(1));
+        builder.url(&self.target_url);
         builder.done()
     }
 }
