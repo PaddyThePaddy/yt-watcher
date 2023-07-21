@@ -42,7 +42,7 @@ async fn main() {
         }
     };
 
-    let mut new_logger = fern::Dispatch::new()
+    fern::Dispatch::new()
         // Perform allocation-free log formatting
         .format(|out, message, record| {
             out.finish(format_args!(
@@ -54,17 +54,18 @@ async fn main() {
             ))
         })
         .chain(std::io::stdout())
-        .chain(fern::log_file("output.log").unwrap());
-    match config.log_level.as_str() {
-        "Off" => new_logger = new_logger.level(log::LevelFilter::Off),
-        "Error" => new_logger = new_logger.level(log::LevelFilter::Error),
-        "Warn" => new_logger = new_logger.level(log::LevelFilter::Warn),
-        "Info" => new_logger = new_logger.level(log::LevelFilter::Info),
-        "Debug" => new_logger = new_logger.level(log::LevelFilter::Debug),
-        "Trace" => new_logger = new_logger.level(log::LevelFilter::Trace),
-        _ => panic!("Invalid log level"),
-    }
-    new_logger.apply().unwrap();
+        .chain(fern::log_file("output.log").unwrap())
+        .level(match config.log_level.to_lowercase().as_str() {
+            "off" => log::LevelFilter::Off,
+            "error" => log::LevelFilter::Error,
+            "warn" => log::LevelFilter::Warn,
+            "info" => log::LevelFilter::Info,
+            "debug" => log::LevelFilter::Debug,
+            "trace" => log::LevelFilter::Trace,
+            _ => panic!("Invalid log level"),
+        })
+        .apply()
+        .unwrap();
 
     log::info!("starting");
     let socket = match SocketAddr::from_str(&config.socket) {
