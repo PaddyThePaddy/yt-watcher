@@ -484,14 +484,16 @@ pub async fn get_all_video_items(
     key: &str,
 ) -> Result<Vec<Video::Resource>, YtApiError> {
     let mut result = vec![];
-    let mut page_token = None;
-    loop {
-        let current_page = get_video(video_ids, parts, page_token, key).await?;
-        page_token = current_page.next_page_token;
+    let mut idx = 0;
+    while idx * 50 < video_ids.len() {
+        let current_page = get_video(
+            &video_ids[idx * 50..video_ids.len().min(idx * 50 + 50)],
+            parts,
+            key,
+        )
+        .await?;
         result.extend(current_page.value.into_iter());
-        if page_token.is_none() {
-            break;
-        }
+        idx += 1;
     }
     Ok(result)
 }
@@ -499,7 +501,6 @@ pub async fn get_all_video_items(
 pub async fn get_video(
     video_ids: &[String],
     parts: &GetVideoParts,
-    page_token: Option<String>,
     api_key: &str,
 ) -> Result<PagedResponse<Video::Resource>, YtApiError> {
     if video_ids.is_empty() {
@@ -516,10 +517,7 @@ pub async fn get_video(
         url += "&part=";
         url += &parts.build();
     }
-    if let Some(token) = page_token {
-        url += "&pageToken=";
-        url += &token;
-    }
+
     reqwest::get(url)
         .await
         .map_err(|e| YtApiError::RequestFailed(e.status()))?
