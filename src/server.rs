@@ -559,7 +559,7 @@ impl ServerData {
 
         match tokio::fs::read_to_string(&self.video_save_path).await {
             Ok(save_string) => self.yt_videos.extend_from_str(&save_string),
-            Err(e) => log::error!("Read save file {} failed: {}", self.channel_save_path, e),
+            Err(e) => log::error!("Read save file {} failed: {}", self.video_save_path, e),
         }
     }
 }
