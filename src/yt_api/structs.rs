@@ -66,7 +66,7 @@ pub mod Channel {
         pub moderateComments: Option<bool>,
         pub unsubscribedTrailer: String,
         pub defaultLanguage: Option<String>,
-        pub country: String,
+        pub country: Option<String>,
     }
 
     #[derive(Serialize, Deserialize, Debug)]
@@ -119,7 +119,7 @@ pub mod Channel {
         pub thumbnails: HashMap<String, Thumbnail>,
         pub defaultLanguage: Option<String>,
         pub localized: Localization,
-        pub country: String,
+        pub country: Option<String>,
     }
 
     #[derive(Serialize, Deserialize, Debug)]
