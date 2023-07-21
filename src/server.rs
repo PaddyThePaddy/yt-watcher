@@ -20,7 +20,6 @@ pub async fn server_start(
     api_key: &str,
     refresh_interval: u64,
 ) {
-    let root_node = warp::path::end().map(|| "Root node");
     let server_data = Arc::new(RwLock::new(ServerData::new(api_key)));
 
     {
@@ -183,7 +182,7 @@ pub async fn server_start(
         }
     });
     let routes = warp::get().and(
-        root_node
+        warp::fs::dir("www")
             .or(get_channel_id)
             .or(get_data_endpoint)
             .or(get_calendar_endpoint),
