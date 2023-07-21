@@ -479,7 +479,7 @@ impl GetVideoParts {
 }
 
 pub async fn get_all_video_items(
-    video_ids: &[&str],
+    video_ids: &[String],
     parts: &GetVideoParts,
     key: &str,
 ) -> Result<Vec<Video::Resource>, YtApiError> {
@@ -497,7 +497,7 @@ pub async fn get_all_video_items(
 }
 
 pub async fn get_video(
-    video_ids: &[&str],
+    video_ids: &[String],
     parts: &GetVideoParts,
     page_token: Option<String>,
     api_key: &str,

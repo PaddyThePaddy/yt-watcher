@@ -13,24 +13,22 @@ pub struct ChannelIdResponse {
     error: Option<String>,
 }
 
-const SAVE_FILE: &'static str = "save.json";
+const CHANNELS_SAVE_FILE: &'static str = "channels.json";
+const VIDEOS_SAVE_FILE: &'static str = "videos.txt";
 pub async fn server_start(
     http_socket: impl Into<SocketAddr> + Clone,
     https_socket: Option<(impl Into<SocketAddr> + Clone, String, String)>,
     api_key: &str,
     refresh_interval: u64,
 ) {
-    let server_data = Arc::new(RwLock::new(ServerData::new(api_key)));
+    let server_data = Arc::new(RwLock::new(ServerData::new(
+        api_key,
+        CHANNELS_SAVE_FILE.to_string(),
+        VIDEOS_SAVE_FILE.to_string(),
+    )));
 
     {
-        match tokio::fs::read_to_string(SAVE_FILE).await {
-            Ok(s) => {
-                if let Err(e) = server_data.write().await.load_save_string(&s) {
-                    log::error!("Load save file failed: {e}")
-                }
-            }
-            Err(e) => log::error!("Load save file failed: {e}"),
-        }
+        server_data.write().await.restore().await;
         server_data.write().await.check_upcoming_event().await;
     }
 
@@ -89,19 +87,11 @@ pub async fn server_start(
                         if let Err(e) = server_data_clone2
                             .write()
                             .await
-                            .track_new_channel(&new_channel_ids)
+                            .track_new_channels(&new_channel_ids)
                             .await
                         {
                             log::error!("Track new channel failed: {:?}", e);
                         };
-                        match server_data_clone2.read().await.to_save_string() {
-                            Ok(save_str) => {
-                                if let Err(e) = tokio::fs::write(SAVE_FILE, save_str).await {
-                                    log::error!("Write to save file failed: {}", e);
-                                }
-                            }
-                            Err(e) => log::error!("Encode to save string failed: {}", e),
-                        }
                     }
                     let events = { server_data_clone2.read().await.events.clone() };
                     response.extend(events.into_iter().filter(|e| match &e.source {
@@ -136,19 +126,11 @@ pub async fn server_start(
                         if let Err(e) = server_data_clone2
                             .write()
                             .await
-                            .track_new_channel(&new_channel_ids)
+                            .track_new_channels(&new_channel_ids)
                             .await
                         {
                             log::error!("Track new channel failed: {:?}", e);
                         };
-                        match server_data_clone2.read().await.to_save_string() {
-                            Ok(save_str) => {
-                                if let Err(e) = tokio::fs::write(SAVE_FILE, save_str).await {
-                                    log::error!("Write to save file failed: {}", e);
-                                }
-                            }
-                            Err(e) => log::error!("Encode to save string failed: {}", e),
-                        }
                     }
                     let events = { server_data_clone2.read().await.events.clone() };
                     cal.extend(
@@ -171,14 +153,6 @@ pub async fn server_start(
             log::info!("Updating upcoming event");
             let mut data = server_data_clone.write().await;
             data.check_upcoming_event().await;
-            match data.to_save_string() {
-                Ok(save_str) => {
-                    if let Err(e) = tokio::fs::write(SAVE_FILE, save_str).await {
-                        log::error!("Write to save file failed: {}", e);
-                    }
-                }
-                Err(e) => log::error!("Encode to save string failed: {}", e),
-            }
         }
     });
     let routes = warp::get().and(
@@ -208,6 +182,47 @@ struct YtChannelSave {
     title: String,
     upload_playlist: String,
     first_video_after_all_stream: String,
+}
+
+#[derive(Debug, Serialize, Deserialize, Default)]
+struct YtVideosSave {
+    ids: Vec<String>,
+}
+
+impl YtVideosSave {
+    fn dump(&self, target: &mut Vec<String>) {
+        for id in self.ids.iter() {
+            if !target.contains(id) {
+                target.push(id.clone());
+            }
+        }
+    }
+
+    fn set<'a>(&mut self, new_value: Vec<String>) {
+        self.ids = new_value;
+    }
+
+    fn push_checked(&mut self, new_value: String) {
+        if !self.ids.contains(&new_value) {
+            self.ids.push(new_value);
+        }
+    }
+
+    fn extend_from_str(&mut self, value: &str) {
+        let mut new_value = value
+            .split("\n")
+            .filter(|s| !s.trim().is_empty())
+            .map(|s| s.to_string())
+            .collect();
+        self.dump(&mut new_value);
+        self.set(new_value);
+    }
+}
+
+impl ToString for YtVideosSave {
+    fn to_string(&self) -> String {
+        self.ids.join("\n")
+    }
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -308,32 +323,24 @@ impl TryFrom<&Video::Resource> for UpcomingEvent {
     }
 }
 
+#[derive(Default)]
 pub struct ServerData {
     yt_channels: HashMap<String, YtChannelSave>,
+    yt_videos: YtVideosSave,
     events: Vec<UpcomingEvent>,
     api_key: String,
+    channel_save_path: String,
+    video_save_path: String,
 }
 
 impl ServerData {
-    fn new(api_key: &str) -> Self {
+    fn new(api_key: &str, channel_save_path: String, video_save_path: String) -> Self {
         Self {
-            yt_channels: HashMap::new(),
-            events: vec![],
             api_key: api_key.to_string(),
+            channel_save_path,
+            video_save_path,
+            ..Default::default()
         }
-    }
-
-    fn to_save_string(&self) -> Result<String, serde_json::Error> {
-        serde_json::to_string(&self.yt_channels)
-    }
-
-    fn load_save_string(&mut self, save: &str) -> Result<(), serde_json::Error> {
-        let channels: HashMap<String, YtChannelSave> = serde_json::from_str(save)?;
-        channels.into_iter().for_each(|(channel_id, channel)| {
-            self.yt_channels.insert(channel_id, channel);
-        });
-
-        Ok(())
     }
 
     pub async fn check_upcoming_event(&mut self) {
@@ -375,12 +382,11 @@ impl ServerData {
                 }
             }
         }
+
+        self.yt_videos.dump(&mut unchecked_video_ids);
+
         match get_all_video_items(
-            unchecked_video_ids
-                .iter()
-                .map(|s| s.as_str())
-                .collect::<Vec<&str>>()
-                .as_slice(),
+            unchecked_video_ids.as_slice(),
             &GetVideoParts::default().snippet().live_streaming_details(),
             &self.api_key,
         )
@@ -397,6 +403,7 @@ impl ServerData {
                             }
                         } else {
                             first_video_after_all_stream_map.remove(&snippet.channelId);
+                            self.yt_videos.push_checked(v.id.clone());
                         }
                     }
                     match UpcomingEvent::try_from(&v) {
@@ -425,9 +432,10 @@ impl ServerData {
                 }
             });
         self.events = events;
+        self.save().await;
     }
 
-    pub async fn track_new_channel(&mut self, ids: &[&str]) -> Result<(), YtApiError> {
+    pub async fn track_new_channels(&mut self, ids: &[&str]) -> Result<(), YtApiError> {
         let channels = get_all_channels(
             ids,
             &GetChannelParts::default().snippet().content_details(),
@@ -458,11 +466,7 @@ impl ServerData {
                 //let video_ids:Vec<String> = list_item.value.iter().map(|item| item.contentDetails.as_ref().expect("The response of get playlist request doesn't has the contentDetail field. Does youtube api updated?").videoId.clone()).collect();
                 let video_ids = get_video_list_through_rss(&c.id).await?;
                 let videos = get_all_video_items(
-                    video_ids
-                        .iter()
-                        .map(|s| s.as_str())
-                        .collect::<Vec<&str>>()
-                        .as_slice(),
+                    video_ids.as_slice(),
                     &GetVideoParts::default().snippet().live_streaming_details(),
                     &self.api_key,
                 )
@@ -490,6 +494,7 @@ impl ServerData {
                             }
                         } else {
                             first_video_after_all_stream = None;
+                            self.yt_videos.push_checked(v.id.clone());
                         }
                     }
                 }
@@ -506,6 +511,7 @@ impl ServerData {
                 );
             }
         }
+        self.save().await;
         Ok(())
     }
 
@@ -515,5 +521,45 @@ impl ServerData {
             .filter(|c| !self.yt_channels.contains_key(*c))
             .map(|s| s.as_str())
             .collect()
+    }
+
+    async fn save(&self) {
+        match serde_json::to_string(&self.yt_channels) {
+            Ok(save_string) => {
+                if let Err(e) = tokio::fs::write(&self.channel_save_path, save_string).await {
+                    log::error!(
+                        "Write to save file {} failed: {}",
+                        self.channel_save_path,
+                        e
+                    );
+                }
+            }
+            Err(e) => log::error!("Serialize channel save failed: {}", e),
+        }
+
+        if let Err(e) = tokio::fs::write(&self.video_save_path, self.yt_videos.to_string()).await {
+            log::error!("Write to save file {} failed: {}", self.video_save_path, e);
+        }
+    }
+
+    async fn restore(&mut self) {
+        match tokio::fs::read_to_string(&self.channel_save_path).await {
+            Ok(save_string) => {
+                match serde_json::from_str::<HashMap<String, YtChannelSave>>(&save_string) {
+                    Ok(channel) => self.yt_channels = channel,
+                    Err(e) => log::error!(
+                        "Deserialize save file {} failed: {}",
+                        self.channel_save_path,
+                        e
+                    ),
+                }
+            }
+            Err(e) => log::error!("Read save file {} failed: {}", self.channel_save_path, e),
+        }
+
+        match tokio::fs::read_to_string(&self.video_save_path).await {
+            Ok(save_string) => self.yt_videos.extend_from_str(&save_string),
+            Err(e) => log::error!("Read save file {} failed: {}", self.channel_save_path, e),
+        }
     }
 }

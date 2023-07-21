@@ -1,4 +1,5 @@
 /target
 config.toml
 *.log
-save.json
+channels.json
+videos.txt
