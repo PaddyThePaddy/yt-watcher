@@ -2,3 +2,8 @@ api_key = "<api key>"
 socket= "127.0.0.1:80"
 refresh_interval= 10
 log_level= "Info"
+
+#[tls]
+#socket= "127.0.0.1:443"
+#cert = "dummy.cert"
+#key = "dummy.key"

@@ -15,7 +15,8 @@ pub struct ChannelIdResponse {
 
 const SAVE_FILE: &'static str = "save.json";
 pub async fn server_start(
-    addr: impl Into<SocketAddr> + Clone,
+    http_socket: impl Into<SocketAddr> + Clone,
+    https_socket: Option<(impl Into<SocketAddr> + Clone, String, String)>,
     api_key: &str,
     refresh_interval: u64,
 ) {
@@ -187,7 +188,18 @@ pub async fn server_start(
             .or(get_data_endpoint)
             .or(get_calendar_endpoint),
     );
-    warp::serve(routes).run(addr.into()).await;
+    if let Some((https_socket, cert, key)) = https_socket {
+        futures::join!(
+            warp::serve(routes.clone()).run(http_socket.into()),
+            warp::serve(routes)
+                .tls()
+                .cert_path(cert)
+                .key_path(key)
+                .run(https_socket.into()),
+        );
+    } else {
+        warp::serve(routes).run(http_socket.into()).await;
+    }
 }
 
 #[derive(Debug, Serialize, Deserialize)]

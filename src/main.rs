@@ -12,6 +12,14 @@ struct Config {
     socket: String,
     refresh_interval: u64,
     log_level: String,
+    tls: Option<Tls>,
+}
+
+#[derive(Debug, Deserialize)]
+struct Tls {
+    socket: String,
+    cert: String,
+    key: String,
 }
 
 #[tokio::main]
@@ -63,5 +71,15 @@ async fn main() {
         Ok(s) => s,
         Err(e) => panic!("Invalid socket: {}", e),
     };
-    server::server_start(socket, &config.api_key, config.refresh_interval).await;
+    let tls_info = config.tls.map(|tls| {
+        (
+            match SocketAddr::from_str(&tls.socket) {
+                Ok(s) => s,
+                Err(e) => panic!("Invalid socket: {}", e),
+            },
+            tls.cert,
+            tls.key,
+        )
+    });
+    server::server_start(socket, tls_info, &config.api_key, config.refresh_interval).await;
 }
