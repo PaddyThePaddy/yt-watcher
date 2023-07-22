@@ -1,10 +1,25 @@
+# The youtube data api key. Get it from https://console.cloud.google.com
 api_key = "<api key>"
+
+# The socket for http server
 socket= "127.0.0.1:80"
+
+# Interval between updating video info. In minutes.
+# Will cost about <videos to be updated> / 50 quota
 video_refresh_interval= 10
+
+# Interval between updating channel info. In minutes.
+# Will cost about <channels to be updated> / 50 quota
 channel_refresh_interval= 1440
+
+# Delete channel data when it is not used in the time span
+# In minutes
 channel_expire_min = 10080
+
+# Logging level
 log_level= "Info"
 
+# Information for https server
 #[tls]
 #socket= "127.0.0.1:443"
 #cert = "dummy.cert"
