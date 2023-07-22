@@ -49,6 +49,7 @@ pub async fn server_start(config: &crate::Config) {
         &config.api_key,
         CHANNELS_SAVE_FILE.to_string(),
         VIDEOS_SAVE_FILE.to_string(),
+        config.channel_expire_min,
     )));
 
     {
@@ -95,17 +96,13 @@ pub async fn server_start(config: &crate::Config) {
                                     .unwrap();
                                 }
                             }
-                            let channel_save = server_data_clone2
-                                .read()
-                                .await
-                                .yt_channels
-                                .get(&id)
-                                .unwrap()
-                                .clone();
+                            let mut server_data = server_data_clone2.write().await;
+                            server_data.touch_channel(&id);
+                            let channel_save = server_data.yt_channels.get(&id).unwrap();
                             ChannelInfoResponse::data(ChannelInfoData {
                                 id,
-                                title: channel_save.title,
-                                custom_url: channel_save.custom_url,
+                                title: channel_save.title.clone(),
+                                custom_url: channel_save.custom_url.clone(),
                                 thumbnail: channel_save.thumbnail.clone(),
                             })
                         }
@@ -147,7 +144,14 @@ pub async fn server_start(config: &crate::Config) {
                             log::error!("Track new channel failed: {:?}", e);
                         };
                     }
-                    let events = { server_data_clone2.read().await.events.clone() };
+
+                    let events = {
+                        let mut server_data = server_data_clone2.write().await;
+                        for id in ids.iter() {
+                            server_data.touch_channel(id);
+                        }
+                        server_data.events.clone()
+                    };
                     response.extend(events.into_iter().filter(|e| match &e.source {
                         EventSource::YoutubeChannel(id) => ids.contains(id),
                     }));
@@ -187,7 +191,14 @@ pub async fn server_start(config: &crate::Config) {
                             log::error!("Track new channel failed: {:?}", e);
                         };
                     }
-                    let events = { server_data_clone2.read().await.events.clone() };
+
+                    let events = {
+                        let mut server_data = server_data_clone2.write().await;
+                        for id in ids.iter() {
+                            server_data.touch_channel(id);
+                        }
+                        server_data.events.clone()
+                    };
                     cal.extend(
                         events
                             .into_iter()
@@ -271,9 +282,11 @@ impl YtVideosSave {
     }
 
     fn push_checked(&mut self, new_value: String) {
-        if !self.ids.contains(&new_value) {
-            self.ids.insert(new_value);
-        }
+        self.ids.insert(new_value);
+    }
+
+    fn remove(&mut self, value: &String) {
+        self.ids.remove(value);
     }
 
     fn extend_from_str(&mut self, value: &str) {
@@ -422,14 +435,21 @@ pub struct ServerData {
     api_key: String,
     channel_save_path: String,
     video_save_path: String,
+    channel_expire_min: i64,
 }
 
 impl ServerData {
-    fn new(api_key: &str, channel_save_path: String, video_save_path: String) -> Self {
+    fn new(
+        api_key: &str,
+        channel_save_path: String,
+        video_save_path: String,
+        channel_expire_min: i64,
+    ) -> Self {
         Self {
             api_key: api_key.to_string(),
             channel_save_path,
             video_save_path,
+            channel_expire_min,
             ..Default::default()
         }
     }
@@ -487,6 +507,11 @@ impl ServerData {
             Ok(resp) => {
                 for v in resp {
                     if let Some(snippet) = &v.snippet {
+                        if !self.yt_channels.contains_key(&snippet.channelId) {
+                            log::info!("Video {} does not belongs to any tracking channel", v.id);
+                            self.yt_videos.remove(&v.id);
+                            continue;
+                        }
                         if snippet.liveBroadcastContent == "none" {
                             if !first_video_after_all_stream_map.contains_key(&snippet.channelId) {
                                 first_video_after_all_stream_map
@@ -666,6 +691,31 @@ impl ServerData {
     }
 
     pub async fn update_channel_info(&mut self) {
+        let now = Utc::now();
+        let channel_ids = self
+            .yt_channels
+            .keys()
+            .map(|s| s.clone())
+            .collect::<Vec<String>>();
+        for id in channel_ids.iter() {
+            if now
+                - self
+                    .yt_channels
+                    .get(id)
+                    .expect("Get channel data from server data failed")
+                    .last_time_used
+                > chrono::Duration::minutes(self.channel_expire_min)
+            {
+                log::info!(
+                    "Channel {id} was not accessed in the past {} mins. Will delete it.",
+                    self.channel_expire_min
+                );
+                self.yt_channels.remove(id);
+            }
+        }
+        if self.yt_channels.is_empty() {
+            return;
+        }
         match get_all_channels(
             self.yt_channels
                 .keys()
@@ -708,6 +758,14 @@ impl ServerData {
                     }
                 }
             }
+        }
+
+        self.save().await;
+    }
+
+    pub fn touch_channel(&mut self, id: &str) {
+        if let Some(ch) = self.yt_channels.get_mut(id) {
+            ch.last_time_used = Utc::now();
         }
     }
 }

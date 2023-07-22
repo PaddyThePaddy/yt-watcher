@@ -11,6 +11,7 @@ pub struct Config {
     socket: String,
     video_refresh_interval: u64,
     channel_refresh_interval: u64,
+    channel_expire_min: i64,
     log_level: String,
     tls: Option<Tls>,
 }

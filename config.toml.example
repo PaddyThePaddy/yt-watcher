@@ -2,6 +2,7 @@ api_key = "<api key>"
 socket= "127.0.0.1:80"
 video_refresh_interval= 10
 channel_refresh_interval= 1440
+channel_expire_min = 10080
 log_level= "Info"
 
 #[tls]
