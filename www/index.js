@@ -119,7 +119,7 @@ function follow() {
     id_list += channel_data.custom_url;
     set_id_list(id_list);
     update_channel_id_list();
-    render_video_list();
+    update_video_list();
   }
 }
 
