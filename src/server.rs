@@ -30,14 +30,23 @@ pub enum ChannelInfoResponse {
 
 const CHANNELS_SAVE_FILE: &'static str = "channels.json";
 const VIDEOS_SAVE_FILE: &'static str = "videos.txt";
-pub async fn server_start(
-    http_socket: impl Into<SocketAddr> + Clone,
-    https_socket: Option<(impl Into<SocketAddr> + Clone, String, String)>,
-    api_key: &str,
-    refresh_interval: u64,
-) {
+pub async fn server_start(config: &crate::Config) {
+    let http_socket = match SocketAddr::from_str(&config.socket) {
+        Ok(s) => s,
+        Err(e) => panic!("Invalid socket: {}", e),
+    };
+    let tls_info = config.tls.clone().map(|tls| {
+        (
+            match SocketAddr::from_str(&tls.socket) {
+                Ok(s) => s,
+                Err(e) => panic!("Invalid socket: {}", e),
+            },
+            tls.cert,
+            tls.key,
+        )
+    });
     let server_data = Arc::new(RwLock::new(ServerData::new(
-        api_key,
+        &config.api_key,
         CHANNELS_SAVE_FILE.to_string(),
         VIDEOS_SAVE_FILE.to_string(),
     )));
@@ -97,7 +106,7 @@ pub async fn server_start(
                                 id,
                                 title: channel_save.title,
                                 custom_url: channel_save.custom_url,
-                                thumbnail: channel_save.thumbnails.clone(),
+                                thumbnail: channel_save.thumbnail.clone(),
                             })
                         }
                         Err(e) => {
@@ -193,12 +202,23 @@ pub async fn server_start(
         });
 
     let server_data_clone = server_data.clone();
+    let video_refresh_interval = config.video_refresh_interval;
     let _handle = tokio::spawn(async move {
         loop {
-            tokio::time::sleep(Duration::from_secs(60 * refresh_interval)).await;
+            tokio::time::sleep(Duration::from_secs(60 * video_refresh_interval)).await;
             log::info!("Updating upcoming event");
             let mut data = server_data_clone.write().await;
             data.check_upcoming_event().await;
+        }
+    });
+    let server_data_clone = server_data.clone();
+    let channel_refresh_interval = config.channel_refresh_interval;
+    let _handle = tokio::spawn(async move {
+        loop {
+            tokio::time::sleep(Duration::from_secs(60 * channel_refresh_interval)).await;
+            log::info!("Updating channel info");
+            let mut data = server_data_clone.write().await;
+            data.update_channel_info().await;
         }
     });
     let routes = warp::get().and(
@@ -207,17 +227,17 @@ pub async fn server_start(
             .or(get_data_endpoint)
             .or(get_calendar_endpoint),
     );
-    if let Some((https_socket, cert, key)) = https_socket {
+    if let Some((https_socket, cert, key)) = tls_info {
         futures::join!(
-            warp::serve(routes.clone()).run(http_socket.into()),
+            warp::serve(routes.clone()).run(http_socket),
             warp::serve(routes)
                 .tls()
                 .cert_path(cert)
                 .key_path(key)
-                .run(https_socket.into()),
+                .run(https_socket),
         );
     } else {
-        warp::serve(routes).run(http_socket.into()).await;
+        warp::serve(routes).run(http_socket).await;
     }
 }
 
@@ -226,8 +246,9 @@ struct YtChannelSave {
     custom_url: String,
     id: String,
     title: String,
-    thumbnails: String,
+    thumbnail: String,
     upload_playlist: String,
+    last_time_used: DateTime<Utc>,
     first_video_after_all_stream: String,
 }
 
@@ -578,12 +599,13 @@ impl ServerData {
                     c.id.clone(),
                     YtChannelSave {
                         custom_url: snippet.customUrl,
-                        thumbnails: max_thumbnail.0.to_string(),
+                        thumbnail: max_thumbnail.0.to_string(),
                         id: c.id.clone(),
                         title: snippet.title,
                         upload_playlist: content_detail.relatedPlaylists.uploads.clone(),
                         first_video_after_all_stream: first_video_after_all_stream
                             .unwrap_or("".to_string()),
+                        last_time_used: Utc::now(),
                     },
                 );
             }
@@ -637,6 +659,52 @@ impl ServerData {
         match tokio::fs::read_to_string(&self.video_save_path).await {
             Ok(save_string) => self.yt_videos.extend_from_str(&save_string),
             Err(e) => log::error!("Read save file {} failed: {}", self.video_save_path, e),
+        }
+    }
+
+    pub async fn update_channel_info(&mut self) {
+        match get_all_channels(
+            self.yt_channels
+                .keys()
+                .map(|s| s.as_str())
+                .collect::<Vec<&str>>()
+                .as_slice(),
+            &GetChannelParts::default().snippet().content_details(),
+            &self.api_key,
+        )
+        .await
+        {
+            Err(e) => log::error!("Update channel info failed: {e:?}"),
+            Ok(channel_res) => {
+                for res in channel_res {
+                    if res.snippet.is_none() {
+                        log::error!(
+                            "The channel {} resource doesn't has snippet property",
+                            res.id
+                        );
+                    } else if res.contentDetails.is_none() {
+                        log::error!(
+                            "The channel {} resource doesn't has contentDetails property",
+                            res.id
+                        );
+                    } else {
+                        let snippet = res.snippet.unwrap();
+                        let content_details = res.contentDetails.unwrap();
+                        let channel_save = self
+                            .yt_channels
+                            .get_mut(&res.id)
+                            .expect("Get channel save by id failed");
+                        channel_save.custom_url = snippet.customUrl;
+                        if let Some(thumbnail) = snippet.thumbnails.get("medium") {
+                            channel_save.thumbnail = thumbnail.url.clone();
+                        } else {
+                            log::error!("The channel {} doesn't has \"medium\" thumbnail", res.id);
+                        }
+                        channel_save.title = snippet.title;
+                        channel_save.upload_playlist = content_details.relatedPlaylists.uploads;
+                    }
+                }
+            }
         }
     }
 }

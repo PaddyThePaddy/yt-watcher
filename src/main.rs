@@ -1,22 +1,22 @@
 mod server;
 mod yt_api;
-use std::{net::SocketAddr, str::FromStr};
 
 use serde::Deserialize;
 
 const CONFIG_PATH: &'static str = "config.toml";
 
-#[derive(Debug, Deserialize)]
-struct Config {
+#[derive(Debug, Deserialize, Clone)]
+pub struct Config {
     api_key: String,
     socket: String,
-    refresh_interval: u64,
+    video_refresh_interval: u64,
+    channel_refresh_interval: u64,
     log_level: String,
     tls: Option<Tls>,
 }
 
-#[derive(Debug, Deserialize)]
-struct Tls {
+#[derive(Debug, Deserialize, Clone)]
+pub struct Tls {
     socket: String,
     cert: String,
     key: String,
@@ -68,19 +68,5 @@ async fn main() {
         .unwrap();
 
     log::info!("starting");
-    let socket = match SocketAddr::from_str(&config.socket) {
-        Ok(s) => s,
-        Err(e) => panic!("Invalid socket: {}", e),
-    };
-    let tls_info = config.tls.map(|tls| {
-        (
-            match SocketAddr::from_str(&tls.socket) {
-                Ok(s) => s,
-                Err(e) => panic!("Invalid socket: {}", e),
-            },
-            tls.cert,
-            tls.key,
-        )
-    });
-    server::server_start(socket, tls_info, &config.api_key, config.refresh_interval).await;
+    server::server_start(&config).await;
 }
