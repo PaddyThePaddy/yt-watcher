@@ -653,7 +653,10 @@ impl ServerData {
                     ),
                 }
             }
-            Err(e) => log::error!("Read save file {} failed: {}", self.channel_save_path, e),
+            Err(e) => {
+                log::error!("Read save file {} failed: {}", self.channel_save_path, e);
+                return;
+            }
         }
 
         match tokio::fs::read_to_string(&self.video_save_path).await {
