@@ -22,6 +22,7 @@ pub struct ChannelInfoData {
 }
 
 #[derive(Debug, Serialize, Deserialize)]
+#[allow(non_camel_case_types)]
 pub enum ChannelInfoResponse {
     data(ChannelInfoData),
     error(String),
