@@ -1,4 +1,10 @@
-use std::{collections::HashMap, net::SocketAddr, str::FromStr, sync::Arc, time::Duration};
+use std::{
+    collections::{HashMap, HashSet},
+    net::SocketAddr,
+    str::FromStr,
+    sync::Arc,
+    time::Duration,
+};
 
 use crate::yt_api::{structs::*, *};
 use chrono::{DateTime, Utc};
@@ -226,7 +232,7 @@ struct YtChannelSave {
 
 #[derive(Debug, Serialize, Deserialize, Default)]
 struct YtVideosSave {
-    ids: Vec<String>,
+    ids: HashSet<String>,
 }
 
 impl YtVideosSave {
@@ -238,13 +244,13 @@ impl YtVideosSave {
         }
     }
 
-    fn set<'a>(&mut self, new_value: Vec<String>) {
+    fn set<'a>(&mut self, new_value: HashSet<String>) {
         self.ids = new_value;
     }
 
     fn push_checked(&mut self, new_value: String) {
         if !self.ids.contains(&new_value) {
-            self.ids.push(new_value);
+            self.ids.insert(new_value);
         }
     }
 
@@ -255,13 +261,22 @@ impl YtVideosSave {
             .map(|s| s.to_string())
             .collect();
         self.dump(&mut new_value);
-        self.set(new_value);
+        self.set(HashSet::from_iter(new_value));
     }
 }
 
 impl ToString for YtVideosSave {
     fn to_string(&self) -> String {
-        self.ids.join("\n")
+        let mut s = String::new();
+        let mut iter = self.ids.iter();
+        if let Some(v) = iter.next() {
+            s += v;
+        }
+        for v in iter {
+            s += "\n";
+            s += v;
+        }
+        s
     }
 }
 
