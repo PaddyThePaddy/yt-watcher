@@ -1,1 +1,53 @@
-www test
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8">
+    <title>Youtube Watcher</title>
+    <link rel="stylesheet" href="style.css" />
+    <script src="index.js"></script>
+  </head>
+
+  <body onload="load();">
+    <div id="menu_content">
+      <button onclick="close_menu()">Close &times;</button>
+      <br />
+      <input
+        type="text"
+        id="channel_name"
+        placeholder="new channel url"
+        onchange="channel_name_changed()"
+      />
+      <br />
+      <button id="check_btn" onclick="check_channel()">Check</button>
+      <button id="follow_btn" onclick="follow()" hidden="true">Follow</button>
+      <button onclick="clear_id()">Clear</button>
+      <br />
+      <div id="channel_preview"></div>
+      <button onclick="render_video_list()">Update video list</button>
+      <br />
+      <button onclick="copy_calendar_url()">Copy calendar url</button>
+      <hr />
+      <ul id="channel_id_list">
+      </ul>
+      <hr>
+      <p>
+        About:<br>
+        這是我為了自己看 vtuber 需求做的小工具<br>
+        在這個網頁可以查詢、追蹤想要的頻道，並且提供 iCal 連結讓其他行事曆 App 匯入<br>
+        本意是模仿 Holodex，但是可以用來追蹤訂閱數通常低於 Holodex 註冊門檻的小頻道<br>
+        如果想要追蹤訂閱數高於兩萬的 vtuber 頻道，還是推薦用功能比較完整的 <a href="https://holodex.net">Holodex</a><br>
+        <br>
+        This is a basic tool made for myself.<br>
+        It can track youtube channels ongoing/upcoming streams and provide a iCal resource to add to calendar apps.<br>
+        This project is highly inspired by Holodex, but can be used to track small channels that doesn't meet the register threshold of Holodex.<br>
+        If you want to track channels that has over 20k subs, <a href="https://holodex.net">Holodex</a> is still recommended.
+      </p>
+    </div>
+    <button onclick="open_menu()">Menu</button>
+    <h3>Ongoing Streams</h3>
+    <div id="ongoing_video_frame" class="video_container"></div>
+    <hr />
+    <h3>Upcoming Streams</h3>
+    <div id="upcoming_video_frame" class="video_container"></div>
+  </body>
+</html>

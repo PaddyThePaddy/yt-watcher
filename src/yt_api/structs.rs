@@ -27,7 +27,7 @@ pub struct MultipleItemsResponse<T> {
     pub items: Vec<T>,
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Thumbnail {
     pub url: String,
     pub width: u32,

@@ -8,9 +8,17 @@ use tokio::sync::RwLock;
 use warp::Filter;
 
 #[derive(Debug, Serialize, Deserialize)]
-pub struct ChannelIdResponse {
-    channel_id: Option<String>,
-    error: Option<String>,
+pub struct ChannelInfoData {
+    id: String,
+    title: String,
+    custom_url: String,
+    thumbnail: String,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub enum ChannelInfoResponse {
+    data(ChannelInfoData),
+    error(String),
 }
 
 const CHANNELS_SAVE_FILE: &'static str = "channels.json";
@@ -32,36 +40,66 @@ pub async fn server_start(
         server_data.write().await.check_upcoming_event().await;
     }
 
-    let get_channel_id = warp::get()
+    let server_data_clone = server_data.clone();
+    let get_channel_info = warp::get()
         .and(warp::path("channel"))
         .and(warp::query::<HashMap<String, String>>())
-        .then(|query: HashMap<String, String>| async move {
-            let response_data = match query.get("q") {
-                None => ChannelIdResponse {
-                    channel_id: None,
-                    error: Some(format!(
+        .then(move |query: HashMap<String, String>| {
+            let server_data_clone2: Arc<RwLock<ServerData>> = server_data_clone.clone();
+            async move {
+                let response_data = match query.get("q") {
+                    None => ChannelInfoResponse::error(format!(
                         "Please provide channel name with \"q\" get parameter"
                     )),
-                },
-                Some(channel_name) => {
-                    match get_channel_id_by_url(&format!(
-                        "https://www.youtube.com/@{}",
-                        channel_name.trim_start_matches("@")
+                    Some(url) => match get_channel_id_by_url(&format!(
+                        "https://www.youtube.com/channel/{}",
+                        try_youtube_id(url).await
                     ))
                     .await
                     {
-                        Ok(id) => ChannelIdResponse {
-                            channel_id: Some(id),
-                            error: None,
-                        },
-                        Err(e) => ChannelIdResponse {
-                            channel_id: None,
-                            error: Some(format!("Failed to get channel id: {:?}", e)),
-                        },
-                    }
-                }
-            };
-            serde_json::to_string(&response_data).unwrap()
+                        Ok(id) => {
+                            if {
+                                !server_data_clone2
+                                    .read()
+                                    .await
+                                    .yt_channels
+                                    .contains_key(&id)
+                            } {
+                                if let Err(e) = {
+                                    server_data_clone2
+                                        .write()
+                                        .await
+                                        .track_new_channels(&[&id])
+                                        .await
+                                } {
+                                    log::error!("Track new channel failed: {:?}", e);
+                                    return serde_json::to_string(&ChannelInfoResponse::error(
+                                        format!("Track new channel failed: {:?}", e),
+                                    ))
+                                    .unwrap();
+                                }
+                            }
+                            let channel_save = server_data_clone2
+                                .read()
+                                .await
+                                .yt_channels
+                                .get(&id)
+                                .unwrap()
+                                .clone();
+                            ChannelInfoResponse::data(ChannelInfoData {
+                                id,
+                                title: channel_save.title,
+                                custom_url: channel_save.custom_url,
+                                thumbnail: channel_save.thumbnails.clone(),
+                            })
+                        }
+                        Err(e) => {
+                            ChannelInfoResponse::error(format!("Failed to get channel id: {:?}", e))
+                        }
+                    },
+                };
+                serde_json::to_string(&response_data).unwrap()
+            }
         });
 
     let server_data_clone = server_data.clone();
@@ -98,6 +136,7 @@ pub async fn server_start(
                         EventSource::YoutubeChannel(id) => ids.contains(id),
                     }));
                 }
+                response.sort();
                 serde_json::to_string(&response).unwrap()
             }
         });
@@ -157,7 +196,7 @@ pub async fn server_start(
     });
     let routes = warp::get().and(
         warp::fs::dir("www")
-            .or(get_channel_id)
+            .or(get_channel_info)
             .or(get_data_endpoint)
             .or(get_calendar_endpoint),
     );
@@ -175,11 +214,12 @@ pub async fn server_start(
     }
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 struct YtChannelSave {
     custom_url: String,
     id: String,
     title: String,
+    thumbnails: String,
     upload_playlist: String,
     first_video_after_all_stream: String,
 }
@@ -225,38 +265,50 @@ impl ToString for YtVideosSave {
     }
 }
 
-#[derive(Debug, Serialize, Deserialize, Clone)]
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Eq)]
 pub enum EventSource {
     YoutubeChannel(String),
 }
 
-#[derive(Debug, Serialize, Deserialize, Clone)]
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Eq)]
 pub struct UpcomingEvent {
-    schedule_date: DateTime<Utc>,
+    start_date_time: DateTime<Utc>,
+    start_timestamp_millis: i64,
     thumbnail_url: Option<String>,
     title: String,
     description: String,
     target_url: String,
-    on_going: bool,
+    ongoing: bool,
     source: EventSource,
 }
 
 impl UpcomingEvent {
     fn to_ical_event(&self) -> icalendar::Event {
         let mut builder = icalendar::Event::new();
-        if self.on_going {
+        if self.ongoing {
             builder.summary(&format!("🔴{}", self.title));
         } else {
             builder.summary(&self.title);
         }
         builder.description(&format!("{}\n\n{}", self.target_url, self.description));
-        builder.starts(self.schedule_date);
-        builder.ends(self.schedule_date + chrono::Duration::hours(1));
+        builder.starts(self.start_date_time);
+        builder.ends(self.start_date_time + chrono::Duration::hours(1));
         builder.url(&self.target_url);
         builder.done()
     }
 }
 
+impl PartialOrd for UpcomingEvent {
+    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
+        self.start_date_time.partial_cmp(&other.start_date_time)
+    }
+}
+
+impl Ord for UpcomingEvent {
+    fn cmp(&self, other: &Self) -> std::cmp::Ordering {
+        self.start_date_time.cmp(&other.start_date_time)
+    }
+}
 #[derive(Debug)]
 pub enum ConvertToUpcomingEventError {
     AlreadyDone(String),
@@ -302,19 +354,21 @@ impl TryFrom<&Video::Resource> for UpcomingEvent {
                     "upcoming" => on_going = false,
                     _ => return Err(ConvertToUpcomingEventError::Unknown(value.id.clone())),
                 }
-                let thumbnail_url = if let Some(t) = snippet.thumbnails.get("default") {
+                let thumbnail_url = if let Some(t) = snippet.thumbnails.get("medium") {
                     t
                 } else {
                     return Err(ConvertToUpcomingEventError::MissingInformation(
                         "Default thumbnail".to_string(),
                     ));
                 };
+
                 return Ok(UpcomingEvent {
-                    schedule_date: start_time,
+                    start_date_time: start_time,
+                    start_timestamp_millis: start_time.timestamp_millis(),
                     title: snippet.title.clone(),
                     description: snippet.description.clone(),
                     target_url: format!("https://www.youtube.com/watch?v={}", value.id),
-                    on_going,
+                    ongoing: on_going,
                     thumbnail_url: Some(thumbnail_url.url.clone()),
                     source: EventSource::YoutubeChannel(snippet.channelId.clone()),
                 });
@@ -498,10 +552,17 @@ impl ServerData {
                         }
                     }
                 }
+                let mut max_thumbnail: (&str, u32) = ("", 0);
+                for thumb in snippet.thumbnails.values() {
+                    if thumb.width > max_thumbnail.1 && thumb.width <= 240 {
+                        max_thumbnail = (thumb.url.as_str(), thumb.width);
+                    }
+                }
                 self.yt_channels.insert(
                     c.id.clone(),
                     YtChannelSave {
                         custom_url: snippet.customUrl,
+                        thumbnails: max_thumbnail.0.to_string(),
                         id: c.id.clone(),
                         title: snippet.title,
                         upload_playlist: content_detail.relatedPlaylists.uploads.clone(),
