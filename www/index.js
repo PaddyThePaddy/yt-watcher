@@ -22,7 +22,7 @@ setInterval(() => {
 
 function load() {
   update_video_list();
-  //update_channel_id_list();
+  update_channel_id_list();
 }
 
 function get_id_list() {
