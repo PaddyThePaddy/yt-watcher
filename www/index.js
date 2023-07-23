@@ -230,11 +230,20 @@ function get_time_delta_string(date) {
   }
 }
 
+let copy_timeout_handle = null;
 function copy_calendar_url() {
   navigator.clipboard
     .writeText(site_url + "cal?channels=" + get_id_list())
     .then(() => {
       console.log("copy success");
+      document.getElementById("copy_popup").classList.add("show")
+      if (copy_timeout_handle) {
+        clearTimeout(copy_timeout_handle);
+      }
+      copy_timeout_handle = setTimeout(() => {
+        document.getElementById("copy_popup").classList.remove("show")
+        copy_timeout_handle = null;
+      }, 2000);
     });
 }
 function open_menu() {

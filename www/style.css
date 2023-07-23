@@ -57,3 +57,24 @@ input {
 h2 {
   color: #dddddd;
 }
+span.popup {
+  visibility: hidden;
+  position: absolute;
+  left: 0;
+  z-index: 1;
+  background-color: rgb(75, 75, 215);
+  border-radius: 3px;
+  text-align: center;
+  margin-left: 2em;
+  margin-top: 2em;
+  transition: opacity 0.5s;
+  opacity: 0;
+  padding: 1px;
+  padding-left: 7px;
+  padding-right: 7px;
+}
+
+span.show{
+  visibility: visible;
+  opacity: 1;
+}
