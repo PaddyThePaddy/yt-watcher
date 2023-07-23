@@ -228,10 +228,12 @@ function build_video_preview(data) {
   const channel_icon_anchor = document.createElement("a");
 
   if (data.source.YoutubeChannel) {
-    channel_icon.src = data.source.YoutubeChannel.thumbnail_url
-    channel_name.innerHTML = data.source.YoutubeChannel.title
-    channel_text_anchor.href = "https://www.youtube.com/" + data.source.YoutubeChannel.custom_url
-    channel_icon_anchor.href = "https://www.youtube.com/" + data.source.YoutubeChannel.custom_url
+    channel_icon.src = data.source.YoutubeChannel.thumbnail_url;
+    channel_name.innerHTML = data.source.YoutubeChannel.title;
+    channel_text_anchor.href =
+      "https://www.youtube.com/" + data.source.YoutubeChannel.custom_url;
+    channel_icon_anchor.href =
+      "https://www.youtube.com/" + data.source.YoutubeChannel.custom_url;
   }
 
   channel_icon_anchor.appendChild(channel_icon);

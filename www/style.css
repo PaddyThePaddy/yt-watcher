@@ -118,7 +118,7 @@ img.channel_icon {
   border-radius: 50%;
   flex-grow: 1;
 }
-div.lower_part_div{
+div.lower_part_div {
   display: flex;
   max-width: 320px;
   width: 320px;
@@ -137,9 +137,8 @@ div.icon_div > a {
   flex-direction: row;
   height: 100%;
   align-items: center;
-
 }
 
 span.channel_name {
-  color:rgb(145, 145, 255)
+  color: rgb(145, 145, 255);
 }
