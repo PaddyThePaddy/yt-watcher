@@ -149,6 +149,7 @@ function clear_id() {
 
 function update_video_list() {
   const id_list = get_id_list();
+  console.log((new Date()) + " updating video info")
   if (id_list.length == 0) {
     console.log("id list is empty");
     return;
@@ -165,6 +166,7 @@ function update_video_list() {
 
 function render_video_list() {
   const id_list = get_id_list();
+  console.log((new Date()) + " rendering video list")
   if (id_list.length == 0) {
     console.log("id list is empty");
     return;
