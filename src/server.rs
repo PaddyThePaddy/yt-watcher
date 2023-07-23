@@ -387,7 +387,7 @@ impl UpcomingEvent {
             }
         }
         description += &self.description;
-
+        builder.description(&description);
         builder.url(&self.target_url);
         if alarm_enabled {
             builder.alarm(Alarm::display(&self.title, -chrono::Duration::minutes(5)));
