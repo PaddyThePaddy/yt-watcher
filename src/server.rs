@@ -6,7 +6,10 @@ use std::{
     time::Duration,
 };
 
-use crate::yt_api::{structs::*, *};
+use crate::{
+    yt_api::{structs::*, *},
+    Compression,
+};
 use chrono::{DateTime, Utc};
 use icalendar::{Alarm, Component, EventLike};
 use serde::{Deserialize, Serialize};
@@ -242,17 +245,38 @@ pub async fn server_start(config: &crate::Config) {
             .or(get_data_endpoint)
             .or(get_calendar_endpoint),
     );
-    if let Some((https_socket, cert, key)) = tls_info {
-        futures::join!(
-            warp::serve(routes.clone()).run(http_socket),
-            warp::serve(routes)
-                .tls()
-                .cert_path(cert)
-                .key_path(key)
-                .run(https_socket),
-        );
+    if config.compression == Compression::none {
+        if let Some((https_socket, cert, key)) = tls_info {
+            futures::join!(
+                warp::serve(routes.clone()).run(http_socket),
+                warp::serve(routes)
+                    .tls()
+                    .cert_path(cert)
+                    .key_path(key)
+                    .run(https_socket),
+            );
+        } else {
+            warp::serve(routes).run(http_socket).await;
+        }
     } else {
-        warp::serve(routes).run(http_socket).await;
+        let routes = match config.compression {
+            Compression::none => unimplemented!(),
+            Compression::gzip => routes.with(warp::filters::compression::deflate()),
+            Compression::dflate => routes.with(warp::filters::compression::deflate()),
+            //Compression::brotli => routes.with(warp::filters::compression::brotli()),
+        };
+        if let Some((https_socket, cert, key)) = tls_info {
+            futures::join!(
+                warp::serve(routes.clone()).run(http_socket),
+                warp::serve(routes)
+                    .tls()
+                    .cert_path(cert)
+                    .key_path(key)
+                    .run(https_socket),
+            );
+        } else {
+            warp::serve(routes).run(http_socket).await;
+        }
     }
 }
 

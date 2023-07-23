@@ -5,6 +5,15 @@ use serde::Deserialize;
 
 const CONFIG_PATH: &'static str = "config.toml";
 
+#[derive(Debug, Deserialize, Clone, PartialEq, Eq)]
+#[allow(non_camel_case_types)]
+enum Compression {
+    none,
+    gzip,
+    dflate,
+    //brotli,
+}
+
 #[derive(Debug, Deserialize, Clone)]
 pub struct Config {
     api_key: String,
@@ -13,6 +22,7 @@ pub struct Config {
     channel_refresh_interval: u64,
     channel_expire_min: i64,
     log_level: String,
+    compression: Compression,
     tls: Option<Tls>,
 }
 

@@ -19,6 +19,10 @@ channel_expire_min = 10080
 # Logging level
 log_level= "Info"
 
+# Enable warp's compression: https://docs.rs/warp/latest/warp/filters/compression/index.html
+# none | gzip | dflate
+compression= "none"
+
 # Information for https server
 #[tls]
 #socket= "127.0.0.1:443"
