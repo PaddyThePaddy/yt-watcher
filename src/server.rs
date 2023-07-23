@@ -153,7 +153,7 @@ pub async fn server_start(config: &crate::Config) {
                         server_data.events.clone()
                     };
                     response.extend(events.into_iter().filter(|e| match &e.source {
-                        EventSource::YoutubeChannel(id) => ids.contains(id),
+                        EventSource::YoutubeChannel(c) => ids.contains(&c.id),
                     }));
                 }
                 response.sort();
@@ -207,7 +207,7 @@ pub async fn server_start(config: &crate::Config) {
                         events
                             .into_iter()
                             .filter(|e: &UpcomingEvent| match &e.source {
-                                EventSource::YoutubeChannel(id) => ids.contains(id),
+                                EventSource::YoutubeChannel(c) => ids.contains(&c.id),
                             })
                             .map(|e| e.to_ical_event(alarm_enabled)),
                     );
@@ -320,8 +320,16 @@ impl ToString for YtVideosSave {
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Eq)]
+pub struct ChannelBrief {
+    id: String,
+    thumbnail_url: String,
+    title: String,
+    custom_url: String,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Eq)]
 pub enum EventSource {
-    YoutubeChannel(String),
+    YoutubeChannel(ChannelBrief),
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Eq)]
@@ -347,7 +355,14 @@ impl UpcomingEvent {
             builder.summary(&self.title);
             builder.ends(self.start_date_time + chrono::Duration::hours(1));
         }
-        builder.description(&format!("{}\n\n{}", self.target_url, self.description));
+        let mut description = format!("{}\n\n", self.target_url);
+        match &self.source {
+            EventSource::YoutubeChannel(c) => {
+                description += &format!("{}\n{}\n\n", c.title, c.custom_url);
+            }
+        }
+        description += &self.description;
+
         builder.url(&self.target_url);
         if alarm_enabled {
             builder.alarm(Alarm::display(&self.title, -chrono::Duration::minutes(5)));
@@ -372,13 +387,14 @@ pub enum ConvertToUpcomingEventError {
     AlreadyDone(String),
     MissingInformation(String),
     DecodeError(String),
+    EventSourceNotFound(String),
     Unknown(String),
 }
 
-impl TryFrom<&Video::Resource> for UpcomingEvent {
+impl TryFrom<(&Video::Resource, &ServerData)> for UpcomingEvent {
     type Error = ConvertToUpcomingEventError;
-    fn try_from(value: &Video::Resource) -> Result<Self, Self::Error> {
-        let start_time: DateTime<Utc> = if let Some(live_info) = &value.liveStreamingDetails {
+    fn try_from(value: (&Video::Resource, &ServerData)) -> Result<Self, Self::Error> {
+        let start_time: DateTime<Utc> = if let Some(live_info) = &value.0.liveStreamingDetails {
             if let Some(actual_start_time) = &live_info.actualStartTime {
                 chrono::DateTime::from_str(&actual_start_time)
                     .map_err(|e| ConvertToUpcomingEventError::DecodeError(format!("{}", e)))?
@@ -396,7 +412,7 @@ impl TryFrom<&Video::Resource> for UpcomingEvent {
             ));
         };
 
-        match &value.snippet {
+        match &value.0.snippet {
             None => {
                 return Err(ConvertToUpcomingEventError::MissingInformation(
                     "snippet".to_string(),
@@ -406,11 +422,11 @@ impl TryFrom<&Video::Resource> for UpcomingEvent {
                 let on_going;
                 match snippet.liveBroadcastContent.as_str() {
                     "none" => {
-                        return Err(ConvertToUpcomingEventError::AlreadyDone(value.id.clone()))
+                        return Err(ConvertToUpcomingEventError::AlreadyDone(value.0.id.clone()))
                     }
                     "live" => on_going = true,
                     "upcoming" => on_going = false,
-                    _ => return Err(ConvertToUpcomingEventError::Unknown(value.id.clone())),
+                    _ => return Err(ConvertToUpcomingEventError::Unknown(value.0.id.clone())),
                 }
                 let thumbnail_url = if let Some(t) = snippet.thumbnails.get("medium") {
                     t
@@ -425,10 +441,24 @@ impl TryFrom<&Video::Resource> for UpcomingEvent {
                     start_timestamp_millis: start_time.timestamp_millis(),
                     title: snippet.title.clone(),
                     description: snippet.description.clone(),
-                    target_url: format!("https://www.youtube.com/watch?v={}", value.id),
+                    target_url: format!("https://www.youtube.com/watch?v={}", value.0.id),
                     ongoing: on_going,
                     thumbnail_url: Some(thumbnail_url.url.clone()),
-                    source: EventSource::YoutubeChannel(snippet.channelId.clone()),
+                    source: EventSource::YoutubeChannel(
+                        match value.1.yt_channels.get(&snippet.channelId) {
+                            None => {
+                                return Err(ConvertToUpcomingEventError::EventSourceNotFound(
+                                    snippet.channelId.clone(),
+                                ))
+                            }
+                            Some(c) => ChannelBrief {
+                                id: c.id.clone(),
+                                thumbnail_url: c.thumbnail.clone(),
+                                title: c.title.clone(),
+                                custom_url: c.custom_url.clone(),
+                            },
+                        },
+                    ),
                 });
             }
         }
@@ -530,7 +560,7 @@ impl ServerData {
                             self.yt_videos.push_checked(v.id.clone());
                         }
                     }
-                    match UpcomingEvent::try_from(&v) {
+                    match UpcomingEvent::try_from((&v, &*self)) {
                         Ok(e) => events.push(e),
                         Err(e) => match e {
                             ConvertToUpcomingEventError::AlreadyDone(_) => {}
@@ -597,7 +627,7 @@ impl ServerData {
                 .await?;
                 let mut first_video_after_all_stream = None;
                 for v in videos {
-                    match UpcomingEvent::try_from(&v) {
+                    match UpcomingEvent::try_from((&v, &*self)) {
                         Ok(e) => self.events.push(e),
                         Err(e) => match e {
                             ConvertToUpcomingEventError::AlreadyDone(_) => {}

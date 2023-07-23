@@ -207,18 +207,44 @@ function build_video_preview(data) {
   link.href = data.target_url;
   const img = document.createElement("img");
   img.src = data.thumbnail_url;
-  const title = document.createElement("span");
+  const title = document.createElement("div");
   title.innerHTML = data.title;
   title.classList = "video_title";
   const start_time = new Date(data.start_timestamp_millis);
   const time_span = document.createElement("span");
   time_span.innerHTML = get_time_delta_string(start_time);
   time_span.title = start_time.toLocaleString();
+  const lower_part_div = document.createElement("div");
+  lower_part_div.classList.add("lower_part_div");
+  const icon_div = document.createElement("div");
+  icon_div.classList.add("icon_div");
+  const text_div = document.createElement("div");
+  text_div.classList.add("text_div");
+  const channel_icon = document.createElement("img");
+  channel_icon.classList.add("channel_icon");
+  const channel_name = document.createElement("span");
+  channel_name.classList.add("channel_name");
+  const channel_text_anchor = document.createElement("a");
+  const channel_icon_anchor = document.createElement("a");
+
+  if (data.source.YoutubeChannel) {
+    channel_icon.src = data.source.YoutubeChannel.thumbnail_url
+    channel_name.innerHTML = data.source.YoutubeChannel.title
+    channel_text_anchor.href = "https://www.youtube.com/" + data.source.YoutubeChannel.custom_url
+    channel_icon_anchor.href = "https://www.youtube.com/" + data.source.YoutubeChannel.custom_url
+  }
+
+  channel_icon_anchor.appendChild(channel_icon);
+  icon_div.appendChild(channel_icon_anchor);
+  channel_text_anchor.appendChild(channel_name);
+  text_div.appendChild(title);
+  text_div.appendChild(channel_text_anchor);
+  text_div.appendChild(time_span);
+  lower_part_div.appendChild(icon_div);
+  lower_part_div.appendChild(text_div);
   link.appendChild(img);
   link.appendChild(document.createElement("br"));
-  link.appendChild(title);
-  link.appendChild(document.createElement("br"));
-  link.appendChild(time_span);
+  link.appendChild(lower_part_div);
   frame.appendChild(link);
   frame.classList = "video_frame";
   return frame;
