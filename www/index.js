@@ -99,9 +99,10 @@ function check_channel() {
 }
 
 function import_channel_list() {
-  const list = document.getElementById("channel_name").value.split(",");
+  let list = document.getElementById("channel_name").value;
+  list = list.replace(new RegExp(site_url + "\\w+\\?channels=([^&]+)"), "$1")
   let promises = [];
-  for (c of list) {
+  for (c of list.split(",")) {
     promises.push(load_channel(c).then(() => {
       follow_channel();
     }));
