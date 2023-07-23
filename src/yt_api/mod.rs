@@ -232,6 +232,7 @@ pub async fn get_channels(
         url += "&pageToken=";
         url += &token;
     }
+    log::debug!("Request url: {}", url);
     reqwest::get(url)
         .await
         .map_err(|e| YtApiError::RequestFailed(e.status()))?
@@ -332,6 +333,8 @@ pub async fn get_playlist_items(
         url += "&pageToken=";
         url += &token;
     }
+
+    log::debug!("Request url: {}", url);
     reqwest::get(url)
         .await
         .map_err(|e| YtApiError::RequestFailed(e.status()))?
@@ -518,6 +521,7 @@ pub async fn get_video(
         url += &parts.build();
     }
 
+    log::debug!("Request url: {}", url);
     reqwest::get(url)
         .await
         .map_err(|e| YtApiError::RequestFailed(e.status()))?
