@@ -15,12 +15,12 @@
         type="text"
         id="channel_name"
         placeholder="new channel url"
-        onchange="channel_name_changed()"
       />
       <br />
       <button id="check_btn" onclick="check_channel()">Check</button>
-      <button id="follow_btn" onclick="follow()" hidden="true">Follow</button>
+      <button id="follow_btn" onclick="follow_btn()" hidden="true">Follow</button>
       <button onclick="clear_id()">Clear</button>
+      <button onclick="import_channel_list()">Import list</button>
       <br />
       <div id="channel_preview"></div>
       <button onclick="render_video_list()">Update video list</button>

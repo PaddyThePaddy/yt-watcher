@@ -40,9 +40,9 @@ function set_id_list(id_list) {
   document.cookie = "id_list=" + id_list;
 }
 
-function channel_name_changed() {
+function load_channel(value) {
   return fetch(
-    site_url + "channel?q=" + document.getElementById("channel_name").value
+    site_url + "channel?q=" + value
   )
     .then((resp) => {
       return resp.json();
@@ -50,27 +50,6 @@ function channel_name_changed() {
     .then((resp) => {
       if (resp.error == null) {
         channel_data = resp.data;
-        let preview = build_channel_div(
-          channel_data.title,
-          channel_data.custom_url,
-          channel_data.thumbnail
-        );
-        let preview_frame = document.getElementById("channel_preview");
-        while (preview_frame.childElementCount != 0) {
-          preview_frame.removeChild(preview_frame.firstChild);
-        }
-        preview_frame.appendChild(preview);
-      } else {
-        clear_id();
-      }
-    })
-    .then(() => {
-      if (channel_data != null) {
-        document.getElementById("follow_btn").hidden = false;
-        document.getElementById("check_btn").hidden = true;
-      } else {
-        document.getElementById("follow_btn").hidden = true;
-        document.getElementById("check_btn").hidden = false;
       }
     });
 }
@@ -96,10 +75,46 @@ function build_channel_div(title, url, thumbnail_url) {
 }
 
 function check_channel() {
-  channel_name_changed();
+  load_channel(document.getElementById("channel_name").value)    .then(() => {
+    
+    if (channel_data != null) {
+      let preview = build_channel_div(
+        channel_data.title,
+        channel_data.custom_url,
+        channel_data.thumbnail
+      );
+      let preview_frame = document.getElementById("channel_preview");
+      while (preview_frame.childElementCount != 0) {
+        preview_frame.removeChild(preview_frame.firstChild);
+      }
+      preview_frame.appendChild(preview);
+      document.getElementById("follow_btn").hidden = false;
+      document.getElementById("check_btn").hidden = true;
+    } else {
+      document.getElementById("follow_btn").hidden = true;
+      document.getElementById("check_btn").hidden = false;
+      clear_id();
+    }
+  });
 }
 
-function follow() {
+function import_channel_list() {
+  const list = document.getElementById("channel_name").value.split(",");
+  let promises = [];
+  for (c of list) {
+    promises.push(load_channel(c).then(() => {
+      follow_channel();
+    }));
+  }
+  Promise.all(promises).then(() => {update_video_list()});
+}
+
+function follow_btn() {
+  follow_channel()
+  update_video_list();
+}
+
+function follow_channel() {
   if (!channel_data) {
     console.log("url is not valid");
     return;
@@ -119,7 +134,6 @@ function follow() {
     id_list += channel_data.custom_url;
     set_id_list(id_list);
     update_channel_id_list();
-    update_video_list();
   }
 }
 
