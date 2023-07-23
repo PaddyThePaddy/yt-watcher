@@ -60,7 +60,7 @@ button {
   background-color: #555555;
   border: 0px;
   font-size: 1.2em;
-  color:#cccccc;
+  color: #cccccc;
   margin: 5px;
 }
 button:hover {
@@ -89,11 +89,11 @@ span.popup {
   padding-right: 7px;
 }
 
-span.show{
+span.show {
   visibility: visible;
   opacity: 1;
 }
-div#menu_remaining_area{
+div#menu_remaining_area {
   width: 100vw;
   height: 100vh;
   position: absolute;

@@ -41,9 +41,7 @@ function set_id_list(id_list) {
 }
 
 function load_channel(value) {
-  return fetch(
-    site_url + "channel?q=" + value
-  )
+  return fetch(site_url + "channel?q=" + value)
     .then((resp) => {
       return resp.json();
     })
@@ -75,8 +73,7 @@ function build_channel_div(title, url, thumbnail_url) {
 }
 
 function check_channel() {
-  load_channel(document.getElementById("channel_name").value)    .then(() => {
-    
+  load_channel(document.getElementById("channel_name").value).then(() => {
     if (channel_data != null) {
       let preview = build_channel_div(
         channel_data.title,
@@ -100,18 +97,22 @@ function check_channel() {
 
 function import_channel_list() {
   let list = document.getElementById("channel_name").value;
-  list = list.replace(new RegExp(site_url + "\\w+\\?channels=([^&]+)"), "$1")
+  list = list.replace(new RegExp(site_url + "\\w+\\?channels=([^&]+)"), "$1");
   let promises = [];
   for (c of list.split(",")) {
-    promises.push(load_channel(c).then(() => {
-      follow_channel();
-    }));
+    promises.push(
+      load_channel(c).then(() => {
+        follow_channel();
+      })
+    );
   }
-  Promise.all(promises).then(() => {update_video_list()});
+  Promise.all(promises).then(() => {
+    update_video_list();
+  });
 }
 
 function follow_btn() {
-  follow_channel()
+  follow_channel();
   update_video_list();
 }
 
@@ -137,7 +138,7 @@ function follow_channel() {
     }
     let url = channel_data.custom_url;
     if (url.startsWith("@")) {
-      url = url.substring(1)
+      url = url.substring(1);
     }
     id_list += url;
     set_id_list(id_list);
@@ -157,7 +158,7 @@ function clear_id() {
 
 function update_video_list() {
   const id_list = get_id_list();
-  console.log((new Date()) + " updating video info")
+  console.log(new Date() + " updating video info");
   if (id_list.length == 0) {
     console.log("id list is empty");
     return;
@@ -174,7 +175,7 @@ function update_video_list() {
 
 function render_video_list() {
   const id_list = get_id_list();
-  console.log((new Date()) + " rendering video list")
+  console.log(new Date() + " rendering video list");
   if (id_list.length == 0) {
     console.log("id list is empty");
     return;
@@ -244,12 +245,12 @@ function copy_calendar_url() {
     .writeText(site_url + "cal?channels=" + get_id_list())
     .then(() => {
       console.log("copy success");
-      document.getElementById("copy_popup").classList.add("show")
+      document.getElementById("copy_popup").classList.add("show");
       if (copy_timeout_handle) {
         clearTimeout(copy_timeout_handle);
       }
       copy_timeout_handle = setTimeout(() => {
-        document.getElementById("copy_popup").classList.remove("show")
+        document.getElementById("copy_popup").classList.remove("show");
         copy_timeout_handle = null;
       }, 2000);
     });
@@ -259,7 +260,7 @@ function open_menu() {
   menu.style.width = "var(--menu-width)";
   menu.style.padding = "5px";
   menu.style.overflow = "scroll";
-  document.getElementById("menu_remaining_area").style.visibility = "visible"
+  document.getElementById("menu_remaining_area").style.visibility = "visible";
 }
 
 function close_menu() {
@@ -267,7 +268,7 @@ function close_menu() {
   menu.style.padding = "0px";
   menu.style.overflow = "hidden";
   menu.style.width = "0px";
-  document.getElementById("menu_remaining_area").style.visibility = "hidden"
+  document.getElementById("menu_remaining_area").style.visibility = "hidden";
 }
 
 function update_channel_id_list() {
