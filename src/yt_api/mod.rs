@@ -77,7 +77,7 @@ pub async fn get_channel_id_by_url(url: &str) -> Result<String, YtApiError> {
 }
 
 pub async fn try_youtube_id(query: &str) -> String {
-    if let Ok(id) = get_channel_id_by_url(&format!(
+    match get_channel_id_by_url(&format!(
         "https://www.youtube.com/@{}",
         query
             .trim_start_matches("https://www.youtube.com/@")
@@ -85,12 +85,14 @@ pub async fn try_youtube_id(query: &str) -> String {
     ))
     .await
     {
-        return id;
+        Ok(id) => return id,
+        Err(e) => {
+            log::error!("Get chanel id by url failed: {:?}", e);
+            return query
+                .trim_start_matches("https://www.youtube.com/channel/")
+                .to_string();
+        }
     }
-
-    return query
-        .trim_start_matches("https://www.youtube.com/channel/")
-        .to_string();
 }
 
 pub struct PagedResponse<T> {
