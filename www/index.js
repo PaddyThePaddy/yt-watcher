@@ -131,7 +131,11 @@ function follow_channel() {
     if (id_list.length != 0) {
       id_list += ",";
     }
-    id_list += channel_data.custom_url;
+    let url = channel_data.custom_url;
+    if (url.startsWith("@")) {
+      url = url.substring(1)
+    }
+    id_list += url;
     set_id_list(id_list);
     update_channel_id_list();
   }
@@ -276,7 +280,7 @@ function update_channel_id_list() {
 function build_channel_id_item(id) {
   const item = document.createElement("li");
   const id_span = document.createElement("span");
-  id_span.innerHTML = id;
+  id_span.innerHTML = "@" + id;
   const del_btn = document.createElement("button");
   del_btn.innerHTML = "&times";
   del_btn.onclick = () => {
