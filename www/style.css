@@ -1,8 +1,22 @@
 @import url("https://fonts.googleapis.com/css2?family=Noto+Sans+TC&display=swap");
+:root {
+  --menu-width: 350px;
+}
+
 body {
   background-color: #111111;
   color: #bbbbbb;
   font-family: "Noto Sans TC", sans-serif;
+  margin: 0px;
+  overflow: hidden;
+}
+div.main_frame {
+  height: 100vh;
+  max-width: 100vw;
+  overflow-x: hidden;
+  overflow-y: auto;
+  margin: 0px;
+  padding: 8px;
 }
 img.channel_avatar {
   border-radius: 50%;
@@ -34,6 +48,7 @@ div#menu_content {
   left: 0px;
   height: 100%;
   width: 0;
+  max-width: var(--menu-width);
   z-index: 1;
   background-color: #333333;
   overflow: hidden;
@@ -77,4 +92,13 @@ span.popup {
 span.show{
   visibility: visible;
   opacity: 1;
+}
+div#menu_remaining_area{
+  width: 100vw;
+  height: 100vh;
+  position: absolute;
+  top: 0px;
+  left: var(--menu-width);
+  visibility: hidden;
+  background-color: #00000088;
 }

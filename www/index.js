@@ -256,9 +256,10 @@ function copy_calendar_url() {
 }
 function open_menu() {
   const menu = document.getElementById("menu_content");
-  menu.style.width = "300px";
+  menu.style.width = "var(--menu-width)";
   menu.style.padding = "5px";
   menu.style.overflow = "scroll";
+  document.getElementById("menu_remaining_area").style.visibility = "visible"
 }
 
 function close_menu() {
@@ -266,6 +267,7 @@ function close_menu() {
   menu.style.padding = "0px";
   menu.style.overflow = "hidden";
   menu.style.width = "0px";
+  document.getElementById("menu_remaining_area").style.visibility = "hidden"
 }
 
 function update_channel_id_list() {
