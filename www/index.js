@@ -97,7 +97,10 @@ function check_channel() {
 
 function import_channel_list() {
   let list = document.getElementById("channel_name").value;
-  list = list.replace(new RegExp(site_url + ".+(?:\\?|&)channels=([^&]+)"), "$1");
+  list = list.replace(
+    new RegExp(site_url + ".+(?:\\?|&)channels=([^&]+)"),
+    "$1"
+  );
   let promises = [];
   for (c of list.split(",")) {
     promises.push(
@@ -241,19 +244,21 @@ function get_time_delta_string(date) {
 
 let copy_timeout_handle = null;
 function copy_calendar_url() {
-  navigator.clipboard
-    .writeText(site_url + "cal?channels=" + get_id_list())
-    .then(() => {
-      console.log("copy success");
-      document.getElementById("copy_popup").classList.add("show");
-      if (copy_timeout_handle) {
-        clearTimeout(copy_timeout_handle);
-      }
-      copy_timeout_handle = setTimeout(() => {
-        document.getElementById("copy_popup").classList.remove("show");
-        copy_timeout_handle = null;
-      }, 2000);
-    });
+  let url = site_url + "cal?channels=" + get_id_list();
+  if (document.getElementById("alarm_cb").checked) {
+    url += "&alram=true";
+  }
+  navigator.clipboard.writeText(url).then(() => {
+    console.log("copy success");
+    document.getElementById("copy_popup").classList.add("show");
+    if (copy_timeout_handle) {
+      clearTimeout(copy_timeout_handle);
+    }
+    copy_timeout_handle = setTimeout(() => {
+      document.getElementById("copy_popup").classList.remove("show");
+      copy_timeout_handle = null;
+    }, 2000);
+  });
 }
 function open_menu() {
   const menu = document.getElementById("menu_content");

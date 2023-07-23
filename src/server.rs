@@ -8,7 +8,7 @@ use std::{
 
 use crate::yt_api::{structs::*, *};
 use chrono::{DateTime, Utc};
-use icalendar::{Component, EventLike};
+use icalendar::{Alarm, Component, EventLike};
 use serde::{Deserialize, Serialize};
 use tokio::sync::RwLock;
 use warp::Filter;
@@ -169,6 +169,10 @@ pub async fn server_start(config: &crate::Config) {
             let server_data_clone2 = server_data_clone.clone();
             async move {
                 let mut cal = icalendar::Calendar::new();
+                let alarm_enabled = match query.get("alram") {
+                    Some(v) => v.to_lowercase() == "true" || v.to_lowercase() == "yes",
+                    None => false,
+                };
                 cal.name("VT calendar");
                 if let Some(query_str) = query.get("channels") {
                     let mut ids: Vec<String> = vec![];
@@ -205,7 +209,7 @@ pub async fn server_start(config: &crate::Config) {
                             .filter(|e: &UpcomingEvent| match &e.source {
                                 EventSource::YoutubeChannel(id) => ids.contains(id),
                             })
-                            .map(|e| e.to_ical_event()),
+                            .map(|e| e.to_ical_event(alarm_enabled)),
                     );
                 }
                 cal.done().to_string()
@@ -333,7 +337,7 @@ pub struct UpcomingEvent {
 }
 
 impl UpcomingEvent {
-    fn to_ical_event(&self) -> icalendar::Event {
+    fn to_ical_event(&self, alarm_enabled: bool) -> icalendar::Event {
         let mut builder = icalendar::Event::new();
         builder.starts(self.start_date_time);
         if self.ongoing {
@@ -345,6 +349,9 @@ impl UpcomingEvent {
         }
         builder.description(&format!("{}\n\n{}", self.target_url, self.description));
         builder.url(&self.target_url);
+        if alarm_enabled {
+            builder.alarm(Alarm::display(&self.title, -chrono::Duration::minutes(5)));
+        }
         builder.done()
     }
 }
