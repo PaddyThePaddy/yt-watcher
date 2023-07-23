@@ -366,6 +366,7 @@ pub struct UpcomingEvent {
     target_url: String,
     ongoing: bool,
     source: EventSource,
+    uid: String,
 }
 
 impl UpcomingEvent {
@@ -391,6 +392,7 @@ impl UpcomingEvent {
         if alarm_enabled {
             builder.alarm(Alarm::display(&self.title, -chrono::Duration::minutes(5)));
         }
+        builder.uid(&self.uid);
         builder.done()
     }
 }
@@ -483,6 +485,7 @@ impl TryFrom<(&Video::Resource, &ServerData)> for UpcomingEvent {
                             },
                         },
                     ),
+                    uid: format!("{}@yt-watcher", value.0.id),
                 });
             }
         }
