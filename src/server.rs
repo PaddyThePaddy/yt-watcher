@@ -649,6 +649,26 @@ impl ServerData {
                     &self.api_key,
                 )
                 .await?;
+
+                let mut max_thumbnail: (&str, u32) = ("", 0);
+                for thumb in snippet.thumbnails.values() {
+                    if thumb.width > max_thumbnail.1 && thumb.width <= 240 {
+                        max_thumbnail = (thumb.url.as_str(), thumb.width);
+                    }
+                }
+                self.yt_channels.insert(
+                    c.id.clone(),
+                    YtChannelSave {
+                        custom_url: snippet.customUrl,
+                        thumbnail: max_thumbnail.0.to_string(),
+                        id: c.id.clone(),
+                        title: snippet.title,
+                        upload_playlist: content_detail.relatedPlaylists.uploads.clone(),
+                        first_video_after_all_stream: String::new(),
+                        last_time_used: Utc::now(),
+                    },
+                );
+
                 let mut first_video_after_all_stream = None;
                 for v in videos {
                     match UpcomingEvent::try_from((&v, &*self)) {
@@ -676,25 +696,11 @@ impl ServerData {
                         }
                     }
                 }
-                let mut max_thumbnail: (&str, u32) = ("", 0);
-                for thumb in snippet.thumbnails.values() {
-                    if thumb.width > max_thumbnail.1 && thumb.width <= 240 {
-                        max_thumbnail = (thumb.url.as_str(), thumb.width);
-                    }
+
+                if let Some(save) = self.yt_channels.get_mut(&c.id) {
+                    save.first_video_after_all_stream =
+                        first_video_after_all_stream.unwrap_or("".to_string());
                 }
-                self.yt_channels.insert(
-                    c.id.clone(),
-                    YtChannelSave {
-                        custom_url: snippet.customUrl,
-                        thumbnail: max_thumbnail.0.to_string(),
-                        id: c.id.clone(),
-                        title: snippet.title,
-                        upload_playlist: content_detail.relatedPlaylists.uploads.clone(),
-                        first_video_after_all_stream: first_video_after_all_stream
-                            .unwrap_or("".to_string()),
-                        last_time_used: Utc::now(),
-                    },
-                );
             }
         }
         self.save().await;
