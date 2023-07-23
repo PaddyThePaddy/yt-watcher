@@ -271,8 +271,8 @@ function build_channel_id_item(id) {
   del_btn.onclick = () => {
     del_channel(id);
   };
-  item.appendChild(id_span);
   item.appendChild(del_btn);
+  item.appendChild(id_span);
   return item;
 }
 

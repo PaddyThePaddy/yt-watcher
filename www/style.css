@@ -40,3 +40,17 @@ div#menu_content {
   transition: width 0.1s;
   padding: 0px;
 }
+button {
+  border-radius: 3px;
+  background-color: #555555;
+  border: 0px;
+  font-size: 1.2em;
+  color:#cccccc;
+  margin: 5px;
+}
+button:hover {
+  background-color: #606060;
+}
+input {
+  font-size: 1.2em;
+}
