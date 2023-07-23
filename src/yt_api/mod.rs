@@ -1,5 +1,8 @@
 #![allow(dead_code)]
 pub mod structs;
+use std::{borrow::BorrowMut, num::NonZeroUsize};
+
+use lru::LruCache;
 use once_cell::sync::Lazy;
 use regex::Regex;
 use reqwest::{self, StatusCode};
@@ -12,7 +15,8 @@ pub enum YtApiError {
     InvalidParameter,
     NotFound,
 }
-
+static mut CHANNEL_NAME_CACHE: Lazy<LruCache<String, String>> =
+    Lazy::new(|| LruCache::new(NonZeroUsize::new(1000).unwrap()));
 static CHANNEL_ID_PATTERNS: [(Lazy<Regex>, usize); 4] = [
     (
         Lazy::new(|| {
@@ -43,7 +47,13 @@ static CHANNEL_ID_PATTERNS: [(Lazy<Regex>, usize); 4] = [
 ];
 
 pub async fn get_channel_id_by_url(url: &str) -> Result<String, YtApiError> {
-    let channel_page_src = reqwest::get(url)
+    let url = url.to_string();
+    unsafe {
+        if let Some(id) = CHANNEL_NAME_CACHE.borrow_mut().get(&url) {
+            return Ok(id.clone());
+        }
+    }
+    let channel_page_src = reqwest::get(&url)
         .await
         .map_err(|e| YtApiError::RequestFailed(e.status()))?
         .error_for_status()
@@ -55,6 +65,9 @@ pub async fn get_channel_id_by_url(url: &str) -> Result<String, YtApiError> {
     for (pattern, grp) in CHANNEL_ID_PATTERNS.iter() {
         if let Some(cap) = pattern.captures(&channel_page_src) {
             if let Some(id) = cap.get(*grp) {
+                unsafe {
+                    CHANNEL_NAME_CACHE.put(url, id.as_str().to_string());
+                }
                 return Ok(id.as_str().to_string());
             }
         }
