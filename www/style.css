@@ -30,10 +30,13 @@ input#menu {
 }
 div#menu_content {
   position: fixed !important;
+  top: 0px;
+  left: 0px;
   height: 100%;
   width: 0;
   z-index: 1;
   background-color: #333333;
-  overflow: scroll;
+  overflow: hidden;
   transition: width 0.1s;
+  padding: 0px;
 }

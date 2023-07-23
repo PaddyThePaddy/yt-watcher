@@ -236,11 +236,17 @@ function copy_calendar_url() {
     });
 }
 function open_menu() {
-  document.getElementById("menu_content").style.width = "300px";
+  const menu = document.getElementById("menu_content");
+  menu.style.width = "300px";
+  menu.style.padding = "5px";
+  menu.style.overflow = "scroll";
 }
 
 function close_menu() {
-  document.getElementById("menu_content").style.width = "0px";
+  const menu = document.getElementById("menu_content");
+  menu.style.padding = "0px";
+  menu.style.overflow = "hidden";
+  menu.style.width = "0px";
 }
 
 function update_channel_id_list() {
