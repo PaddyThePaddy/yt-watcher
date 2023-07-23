@@ -58,7 +58,7 @@ div#menu_content {
   height: 100%;
   width: 0;
   max-width: var(--menu-width);
-  z-index: 1;
+  z-index: 2;
   background-color: #333333;
   overflow: hidden;
   transition: width 0.1s;
@@ -86,7 +86,7 @@ span.popup {
   visibility: hidden;
   position: absolute;
   left: 0;
-  z-index: 1;
+  z-index: 3;
   background-color: rgb(75, 75, 215);
   border-radius: 3px;
   text-align: center;
@@ -108,7 +108,8 @@ div#menu_remaining_area {
   height: 100vh;
   position: absolute;
   top: 0px;
-  left: var(--menu-width);
+  left: 0px;
+  z-index: 1;
   visibility: hidden;
   background-color: #00000088;
 }
