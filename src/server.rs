@@ -335,14 +335,15 @@ pub struct UpcomingEvent {
 impl UpcomingEvent {
     fn to_ical_event(&self) -> icalendar::Event {
         let mut builder = icalendar::Event::new();
+        builder.starts(self.start_date_time);
         if self.ongoing {
             builder.summary(&format!("🔴{}", self.title));
+            builder.ends(Utc::now() + chrono::Duration::hours(1));
         } else {
             builder.summary(&self.title);
+            builder.ends(self.start_date_time + chrono::Duration::hours(1));
         }
         builder.description(&format!("{}\n\n{}", self.target_url, self.description));
-        builder.starts(self.start_date_time);
-        builder.ends(self.start_date_time + chrono::Duration::hours(1));
         builder.url(&self.target_url);
         builder.done()
     }
