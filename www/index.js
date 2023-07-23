@@ -210,6 +210,7 @@ function build_video_preview(data) {
   const title = document.createElement("div");
   title.innerHTML = data.title;
   title.classList = "video_title";
+  title.title = data.title;
   const start_time = new Date(data.start_timestamp_millis);
   const time_span = document.createElement("span");
   time_span.innerHTML = get_time_delta_string(start_time);
