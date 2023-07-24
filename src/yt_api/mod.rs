@@ -17,6 +17,12 @@ pub enum YtApiError {
 }
 static mut CHANNEL_NAME_CACHE: Lazy<LruCache<String, String>> =
     Lazy::new(|| LruCache::new(NonZeroUsize::new(1000).unwrap()));
+static mut REQWEST_CLIENT: Lazy<reqwest::Client> = Lazy::new(|| {
+    reqwest::Client::builder()
+        .local_address(local_ip_address::local_ip().unwrap())
+        .build()
+        .unwrap()
+});
 static CHANNEL_ID_PATTERNS: [(Lazy<Regex>, usize); 4] = [
     (
         Lazy::new(|| {
@@ -53,14 +59,19 @@ pub async fn get_channel_id_by_url(url: &str) -> Result<String, YtApiError> {
             return Ok(id.clone());
         }
     }
-    let channel_page_src = reqwest::get(&url)
-        .await
-        .map_err(|e| YtApiError::RequestFailed(e.status()))?
-        .error_for_status()
-        .map_err(|e| YtApiError::RequestFailed(e.status()))?
-        .text()
-        .await
-        .map_err(|e| YtApiError::DeserializeFailed(format!("{}", e.without_url())))?;
+
+    let channel_page_src = unsafe {
+        log::info!("Channel id cache miss. Making http request: {}", url);
+        REQWEST_CLIENT
+            .execute(REQWEST_CLIENT.get(&url).build().unwrap())
+            .await
+            .map_err(|e| YtApiError::RequestFailed(e.status()))?
+            .error_for_status()
+            .map_err(|e| YtApiError::RequestFailed(e.status()))?
+            .text()
+            .await
+            .map_err(|e| YtApiError::DeserializeFailed(format!("{}", e.without_url())))?
+    };
 
     for (pattern, grp) in CHANNEL_ID_PATTERNS.iter() {
         if let Some(cap) = pattern.captures(&channel_page_src) {
