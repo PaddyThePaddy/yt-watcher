@@ -7,6 +7,7 @@ use once_cell::sync::Lazy;
 use regex::Regex;
 use reqwest::{self, StatusCode};
 use structs::*;
+use tokio::io::AsyncWriteExt;
 
 #[derive(Debug, PartialEq, Eq)]
 pub enum YtApiError {
@@ -15,8 +16,27 @@ pub enum YtApiError {
     InvalidParameter,
     NotFound,
 }
-static mut CHANNEL_NAME_CACHE: Lazy<LruCache<String, String>> =
-    Lazy::new(|| LruCache::new(NonZeroUsize::new(1000).unwrap()));
+const CHANNEL_URL_SAVE: &'static str = "channel_cache";
+static mut CHANNEL_NAME_CACHE: Lazy<LruCache<String, String>> = Lazy::new(|| {
+    let mut cache = LruCache::new(NonZeroUsize::new(1000).unwrap());
+    let line_break_pattern = regex::Regex::new(r"\n|\r\n").unwrap();
+    match std::fs::read_to_string(CHANNEL_URL_SAVE) {
+        Err(e) => log::info!("Open channel url cache file failed: {e}"),
+        Ok(s) => {
+            for pair in line_break_pattern.split(&s) {
+                if pair.trim().is_empty() {
+                    continue;
+                }
+                let mut splitter = pair.split(" ");
+                if let Some((key, value)) = splitter.next().zip(splitter.next()) {
+                    cache.put(key.to_string(), value.to_string());
+                }
+            }
+        }
+    }
+    cache
+});
+static mut CACHE_SAVE_INITIALIZED: bool = false;
 static mut REQWEST_CLIENT: Lazy<reqwest::Client> = Lazy::new(|| {
     reqwest::Client::builder()
         .local_address(local_ip_address::local_ip().unwrap())
@@ -55,6 +75,35 @@ static CHANNEL_ID_PATTERNS: [(Lazy<Regex>, usize); 4] = [
 pub async fn get_channel_id_by_url(url: &str) -> Result<String, YtApiError> {
     let url = url.to_string();
     unsafe {
+        if !CACHE_SAVE_INITIALIZED {
+            tokio::spawn(async {
+                loop {
+                    tokio::time::sleep(std::time::Duration::from_secs(60 * 5)).await;
+                    log::info!("Saving channel url cache");
+                    match tokio::fs::OpenOptions::new()
+                        .write(true)
+                        .create(true)
+                        .open(CHANNEL_URL_SAVE)
+                        .await
+                    {
+                        Err(e) => log::error!("Open channel url cache file to save failed: {e}"),
+                        Ok(mut file) => {
+                            // reverse the iterator. So the last used entry is at the bottom of the file
+                            // when read the save back, it will remain as the last used entry
+                            for (key, value) in CHANNEL_NAME_CACHE.iter().rev() {
+                                if let Err(e) =
+                                    file.write_all(format!("{key} {value}\n").as_bytes()).await
+                                {
+                                    log::error!("Write to channel url cache file failed: {e}");
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+            CACHE_SAVE_INITIALIZED = true;
+        }
+
         if let Some(id) = CHANNEL_NAME_CACHE.borrow_mut().get(&url) {
             return Ok(id.clone());
         }

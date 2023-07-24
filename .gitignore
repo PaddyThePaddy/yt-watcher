@@ -3,3 +3,4 @@ config.toml
 *.log
 channels.json
 videos.txt
+channel_cache
