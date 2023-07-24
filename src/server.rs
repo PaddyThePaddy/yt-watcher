@@ -239,14 +239,14 @@ pub async fn server_start(config: &crate::Config) {
             data.update_channel_info().await;
         }
     });
-    let routes = warp::get().and(
-        warp::fs::dir("www")
-            .or(get_channel_info)
-            .or(get_data_endpoint)
-            .or(get_calendar_endpoint),
-    );
     if config.compression == Compression::none {
         if let Some((https_socket, cert, key)) = tls_info {
+            let routes = warp::get().and(
+                warp::fs::dir("www")
+                    .or(get_channel_info)
+                    .or(get_data_endpoint)
+                    .or(get_calendar_endpoint),
+            );
             futures::join!(
                 warp::serve(routes.clone()).run(http_socket),
                 warp::serve(routes)
@@ -256,16 +256,32 @@ pub async fn server_start(config: &crate::Config) {
                     .run(https_socket),
             );
         } else {
-            warp::serve(routes).run(http_socket).await;
+            warp::serve(
+                warp::get().and(
+                    warp::fs::dir("www")
+                        .or(get_channel_info)
+                        .or(get_data_endpoint)
+                        .or(get_calendar_endpoint),
+                ),
+            )
+            .run(http_socket)
+            .await;
         }
     } else {
-        let routes = match config.compression {
+        let compression = match config.compression {
             Compression::none => unimplemented!(),
-            Compression::gzip => routes.with(warp::filters::compression::deflate()),
-            Compression::dflate => routes.with(warp::filters::compression::deflate()),
-            //Compression::brotli => routes.with(warp::filters::compression::brotli()),
+            Compression::gzip => warp::filters::compression::deflate(),
+            Compression::dflate => warp::filters::compression::deflate(),
+            //Compression::brotli => warp::filters::compression::brotli(),
         };
         if let Some((https_socket, cert, key)) = tls_info {
+            let routes = warp::get().and(
+                warp::fs::dir("www")
+                    .with(compression)
+                    .or(get_channel_info.with(compression))
+                    .or(get_data_endpoint.with(compression))
+                    .or(get_calendar_endpoint),
+            );
             futures::join!(
                 warp::serve(routes.clone()).run(http_socket),
                 warp::serve(routes)
@@ -275,7 +291,17 @@ pub async fn server_start(config: &crate::Config) {
                     .run(https_socket),
             );
         } else {
-            warp::serve(routes).run(http_socket).await;
+            warp::serve(
+                warp::get().and(
+                    warp::fs::dir("www")
+                        .with(compression)
+                        .or(get_channel_info.with(compression))
+                        .or(get_data_endpoint.with(compression))
+                        .or(get_calendar_endpoint),
+                ),
+            )
+            .run(http_socket)
+            .await;
         }
     }
 }
