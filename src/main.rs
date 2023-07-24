@@ -11,7 +11,7 @@ enum Compression {
     none,
     gzip,
     dflate,
-    //brotli,
+    brotli,
 }
 
 #[derive(Debug, Deserialize, Clone)]

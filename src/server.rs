@@ -239,69 +239,131 @@ pub async fn server_start(config: &crate::Config) {
             data.update_channel_info().await;
         }
     });
-    if config.compression == Compression::none {
-        if let Some((https_socket, cert, key)) = tls_info {
-            let routes = warp::get().and(
-                warp::fs::dir("www")
-                    .or(get_channel_info)
-                    .or(get_data_endpoint)
-                    .or(get_calendar_endpoint),
-            );
-            futures::join!(
-                warp::serve(routes.clone()).run(http_socket),
-                warp::serve(routes)
-                    .tls()
-                    .cert_path(cert)
-                    .key_path(key)
-                    .run(https_socket),
-            );
-        } else {
-            warp::serve(
-                warp::get().and(
+    match config.compression {
+        Compression::none => {
+            if let Some((https_socket, cert, key)) = tls_info {
+                let routes = warp::get().and(
                     warp::fs::dir("www")
                         .or(get_channel_info)
                         .or(get_data_endpoint)
                         .or(get_calendar_endpoint),
-                ),
-            )
-            .run(http_socket)
-            .await;
+                );
+                futures::join!(
+                    warp::serve(routes.clone()).run(http_socket),
+                    warp::serve(routes)
+                        .tls()
+                        .cert_path(cert)
+                        .key_path(key)
+                        .run(https_socket),
+                );
+            } else {
+                warp::serve(
+                    warp::get().and(
+                        warp::fs::dir("www")
+                            .or(get_channel_info)
+                            .or(get_data_endpoint)
+                            .or(get_calendar_endpoint),
+                    ),
+                )
+                .run(http_socket)
+                .await;
+            }
         }
-    } else {
-        let compression = match config.compression {
-            Compression::none => unimplemented!(),
-            Compression::gzip => warp::filters::compression::deflate(),
-            Compression::dflate => warp::filters::compression::deflate(),
-            //Compression::brotli => warp::filters::compression::brotli(),
-        };
-        if let Some((https_socket, cert, key)) = tls_info {
-            let routes = warp::get().and(
-                warp::fs::dir("www")
-                    .with(compression)
-                    .or(get_channel_info.with(compression))
-                    .or(get_data_endpoint.with(compression))
-                    .or(get_calendar_endpoint),
-            );
-            futures::join!(
-                warp::serve(routes.clone()).run(http_socket),
-                warp::serve(routes)
-                    .tls()
-                    .cert_path(cert)
-                    .key_path(key)
-                    .run(https_socket),
-            );
-        } else {
-            warp::serve(
-                warp::get().and(
+        Compression::brotli => {
+            let compression = warp::filters::compression::brotli();
+            if let Some((https_socket, cert, key)) = tls_info {
+                let routes = warp::get().and(
                     warp::fs::dir("www")
                         .with(compression)
                         .or(get_channel_info.with(compression))
                         .or(get_data_endpoint.with(compression))
                         .or(get_calendar_endpoint),
-                ),
-            )
-            .run(http_socket)
-            .await;
+                );
+                futures::join!(
+                    warp::serve(routes.clone()).run(http_socket),
+                    warp::serve(routes)
+                        .tls()
+                        .cert_path(cert)
+                        .key_path(key)
+                        .run(https_socket),
+                );
+            } else {
+                warp::serve(
+                    warp::get().and(
+                        warp::fs::dir("www")
+                            .with(compression)
+                            .or(get_channel_info.with(compression))
+                            .or(get_data_endpoint.with(compression))
+                            .or(get_calendar_endpoint),
+                    ),
+                )
+                .run(http_socket)
+                .await;
+            }
+        }
+        Compression::dflate => {
+            let compression = warp::filters::compression::deflate();
+            if let Some((https_socket, cert, key)) = tls_info {
+                let routes = warp::get().and(
+                    warp::fs::dir("www")
+                        .with(compression)
+                        .or(get_channel_info.with(compression))
+                        .or(get_data_endpoint.with(compression))
+                        .or(get_calendar_endpoint),
+                );
+                futures::join!(
+                    warp::serve(routes.clone()).run(http_socket),
+                    warp::serve(routes)
+                        .tls()
+                        .cert_path(cert)
+                        .key_path(key)
+                        .run(https_socket),
+                );
+            } else {
+                warp::serve(
+                    warp::get().and(
+                        warp::fs::dir("www")
+                            .with(compression)
+                            .or(get_channel_info.with(compression))
+                            .or(get_data_endpoint.with(compression))
+                            .or(get_calendar_endpoint),
+                    ),
+                )
+                .run(http_socket)
+                .await;
+            }
+        }
+        Compression::gzip => {
+            let compression = warp::filters::compression::gzip();
+            if let Some((https_socket, cert, key)) = tls_info {
+                let routes = warp::get().and(
+                    warp::fs::dir("www")
+                        .with(compression)
+                        .or(get_channel_info.with(compression))
+                        .or(get_data_endpoint.with(compression))
+                        .or(get_calendar_endpoint),
+                );
+                futures::join!(
+                    warp::serve(routes.clone()).run(http_socket),
+                    warp::serve(routes)
+                        .tls()
+                        .cert_path(cert)
+                        .key_path(key)
+                        .run(https_socket),
+                );
+            } else {
+                warp::serve(
+                    warp::get().and(
+                        warp::fs::dir("www")
+                            .with(compression)
+                            .or(get_channel_info.with(compression))
+                            .or(get_data_endpoint.with(compression))
+                            .or(get_calendar_endpoint),
+                    ),
+                )
+                .run(http_socket)
+                .await;
+            }
         }
     }
 }
