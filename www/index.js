@@ -98,7 +98,7 @@ function check_channel() {
 function import_channel_list() {
   let list = document.getElementById("channel_name").value;
   list = list.replace(
-    new RegExp(site_url + ".+(?:\\?|&)channels=([^&]+)"),
+    new RegExp(".+(?:\\?|&)channels=([^&]+)"),
     "$1"
   );
   let promises = [];
