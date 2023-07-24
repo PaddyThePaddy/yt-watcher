@@ -164,6 +164,8 @@ function update_video_list() {
   console.log(new Date() + " updating video info");
   if (id_list.length == 0) {
     console.log("id list is empty");
+    video_data = null;
+    render_video_list()
     return;
   }
   fetch(site_url + "data?channels=" + id_list)
@@ -179,11 +181,6 @@ function update_video_list() {
 function render_video_list() {
   const id_list = get_id_list();
   console.log(new Date() + " rendering video list");
-  if (id_list.length == 0) {
-    console.log("id list is empty");
-    return;
-  }
-
   const ongoing_video_frame = document.getElementById("ongoing_video_frame");
   const upcoming_video_frame = document.getElementById("upcoming_video_frame");
   while (ongoing_video_frame.childElementCount != 0) {
@@ -191,6 +188,11 @@ function render_video_list() {
   }
   while (upcoming_video_frame.childElementCount != 0) {
     upcoming_video_frame.removeChild(upcoming_video_frame.firstChild);
+  }
+
+  if (id_list.length == 0) {
+    console.log("id list is empty");
+    return;
   }
   for (data of video_data) {
     if (data.ongoing) {
