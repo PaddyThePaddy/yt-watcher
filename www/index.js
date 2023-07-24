@@ -344,4 +344,5 @@ function del_channel(target) {
   }
   set_id_list(new_id_list.join(","));
   update_channel_id_list();
+  update_video_list();
 }
