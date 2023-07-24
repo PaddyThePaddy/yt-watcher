@@ -16,7 +16,7 @@ pub enum YtApiError {
     InvalidParameter,
     NotFound,
 }
-const CHANNEL_URL_SAVE: &'static str = "channel_cache";
+const CHANNEL_URL_SAVE: &str = "channel_cache";
 static mut CHANNEL_NAME_CACHE: Lazy<LruCache<String, String>> = Lazy::new(|| {
     let mut cache = LruCache::new(NonZeroUsize::new(1000).unwrap());
     let line_break_pattern = regex::Regex::new(r"\n|\r\n").unwrap();
@@ -27,7 +27,7 @@ static mut CHANNEL_NAME_CACHE: Lazy<LruCache<String, String>> = Lazy::new(|| {
                 if pair.trim().is_empty() {
                     continue;
                 }
-                let mut splitter = pair.split(" ");
+                let mut splitter = pair.split(' ');
                 if let Some((key, value)) = splitter.next().zip(splitter.next()) {
                     cache.put(key.to_string(), value.to_string());
                 }
@@ -133,7 +133,7 @@ pub async fn get_channel_id_by_url(url: &str) -> Result<String, YtApiError> {
         }
     }
 
-    return Err(YtApiError::NotFound);
+    Err(YtApiError::NotFound)
 }
 
 pub async fn try_youtube_id(query: &str) -> String {
@@ -141,16 +141,16 @@ pub async fn try_youtube_id(query: &str) -> String {
         "https://www.youtube.com/@{}",
         query
             .trim_start_matches("https://www.youtube.com/@")
-            .trim_start_matches("@")
+            .trim_start_matches('@')
     ))
     .await
     {
-        Ok(id) => return id,
+        Ok(id) => id,
         Err(e) => {
             log::error!("Get chanel id by url failed: {:?}", e);
-            return query
+            query
                 .trim_start_matches("https://www.youtube.com/channel/")
-                .to_string();
+                .to_string()
         }
     }
 }

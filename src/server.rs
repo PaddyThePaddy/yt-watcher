@@ -31,8 +31,8 @@ pub enum ChannelInfoResponse {
     error(String),
 }
 
-const CHANNELS_SAVE_FILE: &'static str = "channels.json";
-const VIDEOS_SAVE_FILE: &'static str = "videos.txt";
+const CHANNELS_SAVE_FILE: &str = "channels.json";
+const VIDEOS_SAVE_FILE: &str = "videos.txt";
 pub async fn server_start(config: &crate::Config) {
     let http_socket = match SocketAddr::from_str(&config.socket) {
         Ok(s) => s,
@@ -68,9 +68,9 @@ pub async fn server_start(config: &crate::Config) {
             let server_data_clone2: Arc<RwLock<ServerData>> = server_data_clone.clone();
             async move {
                 let response_data = match query.get("q") {
-                    None => ChannelInfoResponse::error(format!(
-                        "Please provide channel name with \"q\" get parameter"
-                    )),
+                    None => ChannelInfoResponse::error(
+                        "Please provide channel name with \"q\" get parameter".to_string(),
+                    ),
                     Some(url) => match get_channel_id_by_url(&format!(
                         "https://www.youtube.com/channel/{}",
                         try_youtube_id(url).await
@@ -78,13 +78,12 @@ pub async fn server_start(config: &crate::Config) {
                     .await
                     {
                         Ok(id) => {
-                            if {
-                                !server_data_clone2
-                                    .read()
-                                    .await
-                                    .yt_channels
-                                    .contains_key(&id)
-                            } {
+                            if !server_data_clone2
+                                .read()
+                                .await
+                                .yt_channels
+                                .contains_key(&id)
+                            {
                                 if let Err(e) = {
                                     server_data_clone2
                                         .write()
@@ -128,7 +127,7 @@ pub async fn server_start(config: &crate::Config) {
                 let mut response: Vec<UpcomingEvent> = vec![];
                 if let Some(query_str) = query.get("channels") {
                     let mut ids: Vec<String> = vec![];
-                    for id in query_str.split(",") {
+                    for id in query_str.split(',') {
                         ids.push(try_youtube_id(id).await);
                     }
                     let new_channel_ids = {
@@ -179,7 +178,7 @@ pub async fn server_start(config: &crate::Config) {
                 cal.name("VT calendar");
                 if let Some(query_str) = query.get("channels") {
                     let mut ids: Vec<String> = vec![];
-                    for id in query_str.split(",") {
+                    for id in query_str.split(',') {
                         ids.push(try_youtube_id(id).await);
                     }
                     let new_channel_ids = {
@@ -393,7 +392,7 @@ impl YtVideosSave {
         }
     }
 
-    fn set<'a>(&mut self, new_value: HashSet<String>) {
+    fn set(&mut self, new_value: HashSet<String>) {
         self.ids = new_value;
     }
 
@@ -407,7 +406,7 @@ impl YtVideosSave {
 
     fn extend_from_str(&mut self, value: &str) {
         let mut new_value = value
-            .split("\n")
+            .split('\n')
             .filter(|s| !s.trim().is_empty())
             .map(|s| s.to_string())
             .collect();
@@ -510,10 +509,10 @@ impl TryFrom<(&Video::Resource, &ServerData)> for UpcomingEvent {
     fn try_from(value: (&Video::Resource, &ServerData)) -> Result<Self, Self::Error> {
         let start_time: DateTime<Utc> = if let Some(live_info) = &value.0.liveStreamingDetails {
             if let Some(actual_start_time) = &live_info.actualStartTime {
-                chrono::DateTime::from_str(&actual_start_time)
+                chrono::DateTime::from_str(actual_start_time)
                     .map_err(|e| ConvertToUpcomingEventError::DecodeError(format!("{}", e)))?
             } else if let Some(scheduled_start_time) = &live_info.scheduledStartTime {
-                chrono::DateTime::from_str(&scheduled_start_time)
+                chrono::DateTime::from_str(scheduled_start_time)
                     .map_err(|e| ConvertToUpcomingEventError::DecodeError(format!("{}", e)))?
             } else {
                 return Err(ConvertToUpcomingEventError::MissingInformation(
@@ -527,11 +526,9 @@ impl TryFrom<(&Video::Resource, &ServerData)> for UpcomingEvent {
         };
 
         match &value.0.snippet {
-            None => {
-                return Err(ConvertToUpcomingEventError::MissingInformation(
-                    "snippet".to_string(),
-                ))
-            }
+            None => Err(ConvertToUpcomingEventError::MissingInformation(
+                "snippet".to_string(),
+            )),
             Some(snippet) => {
                 let on_going;
                 match snippet.liveBroadcastContent.as_str() {
@@ -851,11 +848,7 @@ impl ServerData {
 
     pub async fn update_channel_info(&mut self) {
         let now = Utc::now();
-        let channel_ids = self
-            .yt_channels
-            .keys()
-            .map(|s| s.clone())
-            .collect::<Vec<String>>();
+        let channel_ids = self.yt_channels.keys().cloned().collect::<Vec<String>>();
         for id in channel_ids.iter() {
             if now
                 - self

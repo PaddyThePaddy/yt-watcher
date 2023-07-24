@@ -3,7 +3,7 @@ mod yt_api;
 
 use serde::Deserialize;
 
-const CONFIG_PATH: &'static str = "config.toml";
+const CONFIG_PATH: &str = "config.toml";
 
 #[derive(Debug, Deserialize, Clone, PartialEq, Eq)]
 #[allow(non_camel_case_types)]
