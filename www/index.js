@@ -3,7 +3,8 @@ const HOUR_MS = 1000 * 60 * 60;
 const MIN_MS = 1000 * 60;
 
 let site_url = document.URL;
-let channel_data = null;
+let yt_channel_data = null;
+let tw_channel_data = null;
 let video_data = null;
 if (site_url.endsWith("index.html")) {
   site_url = site_url.substring(0, site_url.length - 10);
@@ -25,34 +26,61 @@ function load() {
   update_channel_id_list();
 }
 
-function get_id_list() {
+function get_yt_id_list() {
   const cookies = document.cookie.split(";");
   for (c of cookies) {
     const pair = c.split("=", 2);
-    if (pair[0].trim() == "id_list") {
+    if (pair[0].trim() == "yt_id_list") {
       return pair[1].trim();
     }
   }
   return "";
 }
 
-function set_id_list(id_list) {
-  document.cookie = "id_list=" + id_list;
+function set_yt_id_list(id_list) {
+  document.cookie = "yt_id_list=" + id_list;
 }
 
-function load_channel(value) {
-  return fetch(site_url + "channel?q=" + value)
+function get_tw_id_list() {
+  const cookies = document.cookie.split(";");
+  for (c of cookies) {
+    const pair = c.split("=", 2);
+    if (pair[0].trim() == "tw_id_list") {
+      return pair[1].trim();
+    }
+  }
+  return "";
+}
+
+function set_tw_id_list(id_list) {
+  document.cookie = "tw_id_list=" + id_list;
+}
+
+function load_yt_channel(value) {
+  return fetch(site_url + "yt-ch?q=" + value)
     .then((resp) => {
       return resp.json();
     })
     .then((resp) => {
       if (resp.error == null) {
-        channel_data = resp.data;
+        yt_channel_data = resp.data;
       }
     });
 }
 
-function build_channel_div(title, url, thumbnail_url) {
+function load_tw_channel(value) {
+  return fetch(site_url + "tw-ch?q=" + value)
+    .then((resp) => {
+      return resp.json();
+    })
+    .then((resp) => {
+      if (resp.error == null) {
+        tw_channel_data = resp.data;
+      }
+    });
+}
+
+function build_yt_channel_div(title, url, thumbnail_url) {
   const frame = document.createElement("div");
   const link = document.createElement("a");
   link.href = "https://www.youtube.com/" + url;
@@ -72,65 +100,122 @@ function build_channel_div(title, url, thumbnail_url) {
   return frame;
 }
 
-function check_channel() {
-  load_channel(document.getElementById("channel_name").value).then(() => {
-    if (channel_data != null) {
-      let preview = build_channel_div(
-        channel_data.title,
-        channel_data.custom_url,
-        channel_data.thumbnail
+function build_tw_channel_div(title, login, thumbnail_url) {
+  const frame = document.createElement("div");
+  const link = document.createElement("a");
+  link.href = "https://www.twitch.tv/" + login;
+  const img = document.createElement("img");
+  img.src = thumbnail_url;
+  img.classList = "channel_avatar";
+  const title_ele = document.createElement("span");
+  title_ele.innerHTML = title;
+  const login_ele = document.createElement("span");
+  login_ele.innerHTML = login;
+  link.appendChild(img);
+  link.appendChild(document.createElement("br"));
+  link.appendChild(title_ele);
+  link.appendChild(document.createElement("br"));
+  link.appendChild(login_ele);
+  frame.appendChild(link);
+  return frame;
+}
+
+function check_yt_channel() {
+  load_yt_channel(document.getElementById("channel_name").value).then(() => {
+    if (yt_channel_data != null) {
+      let preview = build_yt_channel_div(
+        yt_channel_data.title,
+        yt_channel_data.custom_url,
+        yt_channel_data.thumbnail
       );
-      let preview_frame = document.getElementById("channel_preview");
+      let preview_frame = document.getElementById("yt_channel_preview");
       while (preview_frame.childElementCount != 0) {
         preview_frame.removeChild(preview_frame.firstChild);
       }
       preview_frame.appendChild(preview);
-      document.getElementById("follow_btn").hidden = false;
-      document.getElementById("check_btn").hidden = true;
+      document.getElementById("follow_yt_btn").hidden = false;
+      document.getElementById("check_yt_btn").hidden = true;
     } else {
-      document.getElementById("follow_btn").hidden = true;
-      document.getElementById("check_btn").hidden = false;
-      clear_id();
+      document.getElementById("follow_yt_btn").hidden = true;
+      document.getElementById("check_yt_btn").hidden = false;
+      clear_yt_id();
+    }
+  });
+}
+
+function check_tw_channel() {
+  load_tw_channel(document.getElementById("channel_name").value).then(() => {
+    if (tw_channel_data != null) {
+      let preview = build_yt_channel_div(
+        tw_channel_data.title,
+        tw_channel_data.custom_url,
+        tw_channel_data.thumbnail
+      );
+      let preview_frame = document.getElementById("tw_channel_preview");
+      while (preview_frame.childElementCount != 0) {
+        preview_frame.removeChild(preview_frame.firstChild);
+      }
+      preview_frame.appendChild(preview);
+      document.getElementById("follow_tw_btn").hidden = false;
+      document.getElementById("check_tw_btn").hidden = true;
+    } else {
+      document.getElementById("follow_tw_btn").hidden = true;
+      document.getElementById("check_tw_btn").hidden = false;
+      clear_tw_id();
     }
   });
 }
 
 function import_channel_list() {
   let list = document.getElementById("channel_name").value;
-  list = list.replace(
-    new RegExp(".+(?:\\?|&)channels=([^&]+)"),
-    "$1"
-  );
   let promises = [];
-  for (c of list.split(",")) {
-    promises.push(
-      load_channel(c).then(() => {
-        follow_channel();
-      })
-    );
+  const yt_list = new RegExp(".+(?:\\?|&)yt-ch=([^&]+)").exec(list);
+  if (yt_list != null) {
+    for (c of yt_list[1].split(",").filter((s) => s.length != 0)) {
+      promises.push(
+        load_yt_channel(c).then(() => {
+          follow_yt_channel();
+        })
+      );
+    }
+  }
+  const tw_list = new RegExp(".+(?:\\?|&)tw-ch=([^&]+)").exec(list);
+  if (tw_list != null) {
+    for (c of tw_list[1].split(",").filter((s) => s.length != 0)) {
+      promises.push(
+        load_tw_channel(c).then(() => {
+          follow_tw_channel();
+        })
+      );
+    }
   }
   Promise.all(promises).then(() => {
     update_video_list();
   });
 }
 
-function follow_btn() {
-  follow_channel();
+function follow_yt_btn() {
+  follow_yt_channel();
   update_video_list();
 }
 
-function follow_channel() {
-  if (!channel_data) {
+function follow_tw_btn() {
+  follow_tw_channel();
+  update_video_list();
+}
+
+function follow_yt_channel() {
+  if (!yt_channel_data) {
     console.log("url is not valid");
     return;
   }
   let exist = false;
-  let id_list = get_id_list();
-  for (id of id_list.split(",")) {
+  let id_list = get_yt_id_list();
+  for (id of id_list.split(",").filter((s) => s.length != 0)) {
     if (!id.startsWith("@")) {
       id = "@" + id;
     }
-    if (id == channel_data.custom_url) {
+    if (id == yt_channel_data.custom_url) {
       exist = true;
       break;
     }
@@ -139,36 +224,98 @@ function follow_channel() {
     if (id_list.length != 0) {
       id_list += ",";
     }
-    let url = channel_data.custom_url;
+    let url = yt_channel_data.custom_url;
     if (url.startsWith("@")) {
       url = url.substring(1);
     }
     id_list += url;
-    set_id_list(id_list);
+    set_yt_id_list(id_list);
     update_channel_id_list();
   }
 }
 
+function follow_tw_channel() {
+  if (!tw_channel_data) {
+    console.log("url is not valid");
+    return;
+  }
+  let exist = false;
+  let id_list = get_tw_id_list();
+  for (id of id_list.split(",").filter((s) => s.length != 0)) {
+    if (!id.startsWith("@")) {
+      id = "@" + id;
+    }
+    if (id == tw_channel_data.custom_url) {
+      exist = true;
+      break;
+    }
+  }
+  if (!exist) {
+    if (id_list.length != 0) {
+      id_list += ",";
+    }
+    let url = tw_channel_data.custom_url;
+    if (url.startsWith("@")) {
+      url = url.substring(1);
+    }
+    id_list += url;
+    set_tw_id_list(id_list);
+    update_channel_id_list();
+    update_video_list();
+  }
+}
+
 function clear_id() {
-  let preview_frame = document.getElementById("channel_preview");
+  clear_tw_id();
+  clear_yt_id();
+}
+
+function clear_yt_id() {
+  let preview_frame = document.getElementById("yt_channel_preview");
   while (preview_frame.childElementCount != 0) {
     preview_frame.removeChild(preview_frame.firstChild);
   }
-  channel_data = null;
-  document.getElementById("follow_btn").hidden = true;
-  document.getElementById("check_btn").hidden = false;
+  yt_channel_data = null;
+  document.getElementById("follow_yt_btn").hidden = true;
+  document.getElementById("check_yt_btn").hidden = false;
+}
+function clear_tw_id() {
+  let preview_frame = document.getElementById("tw_channel_preview");
+  while (preview_frame.childElementCount != 0) {
+    preview_frame.removeChild(preview_frame.firstChild);
+  }
+  yt_channel_data = null;
+  document.getElementById("follow_tw_btn").hidden = true;
+  document.getElementById("check_tw_btn").hidden = false;
 }
 
 function update_video_list() {
-  const id_list = get_id_list();
+  const yt_id_list = get_yt_id_list()
+    .split(",")
+    .filter((s) => s.length != 0);
+  const tw_id_list = get_tw_id_list()
+    .split(",")
+    .filter((s) => s.length != 0);
   console.log(new Date() + " updating video info");
-  if (id_list.length == 0) {
+  console.log(tw_id_list);
+  if (yt_id_list.length == 0 && tw_id_list.length == 0) {
     console.log("id list is empty");
     video_data = null;
-    render_video_list()
+    render_video_list();
     return;
   }
-  fetch(site_url + "data?channels=" + id_list)
+  let url = site_url + "data?";
+  if (yt_id_list.length != 0) {
+    url += "yt-ch=" + yt_id_list.join(",");
+  }
+  if (tw_id_list.length != 0) {
+    if (yt_id_list.length != 0) {
+      url += "&";
+    }
+    url += "tw-ch=" + tw_id_list.join(",");
+  }
+  console.log(url);
+  fetch(url)
     .then((resp) => {
       return resp.json();
     })
@@ -179,7 +326,6 @@ function update_video_list() {
 }
 
 function render_video_list() {
-  const id_list = get_id_list();
   console.log(new Date() + " rendering video list");
   const ongoing_video_frame = document.getElementById("ongoing_video_frame");
   const upcoming_video_frame = document.getElementById("upcoming_video_frame");
@@ -190,8 +336,8 @@ function render_video_list() {
     upcoming_video_frame.removeChild(upcoming_video_frame.firstChild);
   }
 
-  if (id_list.length == 0) {
-    console.log("id list is empty");
+  if (video_data == null) {
+    console.log("video_data is empty");
     return;
   }
   for (data of video_data) {
@@ -237,6 +383,16 @@ function build_video_preview(data) {
       "https://www.youtube.com/" + data.source.YoutubeChannel.custom_url;
     channel_icon_anchor.href =
       "https://www.youtube.com/" + data.source.YoutubeChannel.custom_url;
+    frame.classList.add("youtube_video_card");
+  } else if (data.source.TwitchChannel) {
+    channel_icon.src = data.source.TwitchChannel.thumbnail_url;
+    channel_name.innerHTML = data.source.TwitchChannel.title;
+    console.log(data);
+    channel_text_anchor.href =
+      "https://www.twitch.tv/" + data.source.TwitchChannel.login;
+    channel_icon_anchor.href =
+      "https://www.twitch.tv/" + data.source.TwitchChannel.login;
+    frame.classList.add("twitch_video_card");
   }
 
   channel_icon_anchor.appendChild(channel_icon);
@@ -251,7 +407,7 @@ function build_video_preview(data) {
   link.appendChild(document.createElement("br"));
   link.appendChild(lower_part_div);
   frame.appendChild(link);
-  frame.classList = "video_frame";
+  frame.classList.add("video_frame");
   return frame;
 }
 
@@ -275,7 +431,26 @@ function get_time_delta_string(date) {
 
 let copy_timeout_handle = null;
 function copy_calendar_url() {
-  let url = site_url + "cal?channels=" + get_id_list();
+  const yt_id_list = get_yt_id_list()
+    .split(",")
+    .filter((s) => s.length != 0);
+  const tw_id_list = get_tw_id_list()
+    .split(",")
+    .filter((s) => s.length != 0);
+  if (yt_id_list.length == 0 && tw_id_list.length == 0) {
+    console.log("No id for calendar to copy");
+    return;
+  }
+  let url = site_url + "cal?";
+  if (yt_id_list.length != 0) {
+    url += "yt-ch=" + yt_id_list.join(",");
+  }
+  if (tw_id_list.length != 0) {
+    if (yt_id_list.length != 0) {
+      url += "&";
+    }
+    url += "tw-ch=" + tw_id_list.join(",");
+  }
   if (document.getElementById("alarm_cb").checked) {
     url += "&alram=true";
   }
@@ -308,41 +483,93 @@ function close_menu() {
 }
 
 function update_channel_id_list() {
-  const channel_id_list = get_id_list().split(",");
+  const yt_channel_id_list = get_yt_id_list()
+    .split(",")
+    .filter((s) => s.length != 0);
+  const tw_channel_id_list = get_tw_id_list()
+    .split(",")
+    .filter((s) => s.length != 0);
   const id_list_parent = document.getElementById("channel_id_list");
+  let count = 0;
   while (id_list_parent.childElementCount != 0) {
     id_list_parent.removeChild(id_list_parent.firstChild);
   }
-  for (id of channel_id_list) {
+  for (id of yt_channel_id_list) {
     if (id.trim().length > 0) {
-      id_list_parent.appendChild(build_channel_id_item(id));
+      count += 1;
+      id_list_parent.appendChild(build_channel_id_item(id + "@YT"));
     }
   }
+  for (id of tw_channel_id_list) {
+    if (id.trim().length > 0) {
+      count += 1;
+      id_list_parent.appendChild(build_channel_id_item(id + "@TW"));
+    }
+  }
+  document.getElementById("channel_count").innerHTML =
+    "Tracking " + count + " channels";
 }
 
 function build_channel_id_item(id) {
   const item = document.createElement("li");
   const id_span = document.createElement("span");
-  id_span.innerHTML = "@" + id;
   const del_btn = document.createElement("button");
   del_btn.innerHTML = "&times";
   del_btn.onclick = () => {
     del_channel(id);
   };
+  let display_id = id;
+  if (display_id.endsWith("@YT")) {
+    display_id = display_id.substring(0, display_id.length - 3);
+    display_id =
+      display_id +
+      ' <a href="https://www.youtube.com/@' +
+      display_id +
+      '"><img src="assets/youtube_32x32.png" style="height: 1.2em; vertical-align: middle;"></a>';
+  } else {
+    display_id = display_id.substring(0, display_id.length - 3);
+    display_id =
+      display_id +
+      ' <a href="https://www.twitch.tv/' +
+      display_id +
+      '"><img src="assets/twitch_32x32.png" style="height: 1.2em; vertical-align: middle;"></a>';
+  }
+  id_span.innerHTML = "@" + display_id;
   item.appendChild(del_btn);
   item.appendChild(id_span);
   return item;
 }
 
 function del_channel(target) {
-  let current_id_list = get_id_list().split(",");
+  let current_id_list;
+  console.log("Deleting " + target);
+  let source;
+  if (target.endsWith("@YT")) {
+    source = "yt";
+  } else {
+    source = "tw";
+  }
+  if (source == "yt") {
+    current_id_list = get_yt_id_list()
+      .split(",")
+      .filter((s) => s.length != 0);
+  } else {
+    current_id_list = get_tw_id_list()
+      .split(",")
+      .filter((s) => s.length != 0);
+  }
+  target = target.substring(0, target.length - 3);
   let new_id_list = [];
   for (id of current_id_list) {
     if (id != target) {
       new_id_list.push(id);
     }
   }
-  set_id_list(new_id_list.join(","));
+  if (source == "yt") {
+    set_yt_id_list(new_id_list.join(","));
+  } else {
+    set_tw_id_list(new_id_list.join(","));
+  }
   update_channel_id_list();
   update_video_list();
 }

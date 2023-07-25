@@ -1,9 +1,17 @@
 mod server;
+mod tw_api;
 mod yt_api;
 
+use once_cell::sync::Lazy;
 use serde::Deserialize;
 
 const CONFIG_PATH: &str = "config.toml";
+static mut REQWEST_CLIENT: Lazy<reqwest::Client> = Lazy::new(|| {
+    reqwest::Client::builder()
+        .local_address(local_ip_address::local_ip().unwrap())
+        .build()
+        .unwrap()
+});
 
 #[derive(Debug, Deserialize, Clone, PartialEq, Eq)]
 #[allow(non_camel_case_types)]
@@ -24,6 +32,7 @@ pub struct Config {
     log_level: String,
     compression: Compression,
     tls: Option<Tls>,
+    twitch_key: Option<TwAppKey>,
 }
 
 #[derive(Debug, Deserialize, Clone)]
@@ -31,6 +40,12 @@ pub struct Tls {
     socket: String,
     cert: String,
     key: String,
+}
+
+#[derive(Debug, Deserialize, Clone)]
+pub struct TwAppKey {
+    client_id: String,
+    client_secret: String,
 }
 
 #[tokio::main]

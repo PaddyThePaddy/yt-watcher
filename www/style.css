@@ -24,7 +24,15 @@ img.channel_avatar {
 div.video_frame {
   max-width: 320px;
   width: 320px;
-  margin: 1rem;
+  margin: 0.5rem;
+  padding: 0.5em;
+  border-radius: 8px;
+}
+div.twitch_video_card {
+  border: solid rgb(145, 71, 255, 0.3);
+}
+div.youtube_video_card {
+  border: solid rgba(255, 56, 56, 0.3);
 }
 div.video_title {
   overflow-wrap: break-word;

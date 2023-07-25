@@ -2,6 +2,7 @@
 pub mod structs;
 use std::{borrow::BorrowMut, num::NonZeroUsize};
 
+use crate::REQWEST_CLIENT;
 use lru::LruCache;
 use once_cell::sync::Lazy;
 use regex::Regex;
@@ -37,12 +38,6 @@ static mut CHANNEL_NAME_CACHE: Lazy<LruCache<String, String>> = Lazy::new(|| {
     cache
 });
 static mut CACHE_SAVE_INITIALIZED: bool = false;
-static mut REQWEST_CLIENT: Lazy<reqwest::Client> = Lazy::new(|| {
-    reqwest::Client::builder()
-        .local_address(local_ip_address::local_ip().unwrap())
-        .build()
-        .unwrap()
-});
 static CHANNEL_ID_PATTERNS: [(Lazy<Regex>, usize); 4] = [
     (
         Lazy::new(|| {
@@ -71,7 +66,11 @@ static CHANNEL_ID_PATTERNS: [(Lazy<Regex>, usize); 4] = [
         1,
     ),
 ];
+static CUSTOM_URL_PATTERN: Lazy<Regex> = Lazy::new(|| regex::Regex::new(r"^\w+$").unwrap());
 
+pub fn validate_custom_url(custom_url: &str) -> bool {
+    CUSTOM_URL_PATTERN.is_match(custom_url)
+}
 pub async fn get_channel_id_by_url(url: &str) -> Result<String, YtApiError> {
     let url = url.to_string();
     unsafe {

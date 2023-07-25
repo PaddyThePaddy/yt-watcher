@@ -7,8 +7,9 @@ use std::{
 };
 
 use crate::{
+    tw_api::{structs::*, *},
     yt_api::{structs::*, *},
-    Compression,
+    Compression, TwAppKey,
 };
 use chrono::{DateTime, Utc};
 use icalendar::{Alarm, Component, EventLike};
@@ -26,7 +27,7 @@ pub struct ChannelInfoData {
 
 #[derive(Debug, Serialize, Deserialize)]
 #[allow(non_camel_case_types)]
-pub enum ChannelInfoResponse {
+pub enum YtChannelInfoResponse {
     data(ChannelInfoData),
     error(String),
 }
@@ -48,12 +49,16 @@ pub async fn server_start(config: &crate::Config) {
             tls.key,
         )
     });
-    let server_data = Arc::new(RwLock::new(ServerData::new(
-        &config.api_key,
-        CHANNELS_SAVE_FILE.to_string(),
-        VIDEOS_SAVE_FILE.to_string(),
-        config.channel_expire_min,
-    )));
+    let server_data = Arc::new(RwLock::new(
+        ServerData::new(
+            &config.api_key,
+            CHANNELS_SAVE_FILE.to_string(),
+            VIDEOS_SAVE_FILE.to_string(),
+            config.channel_expire_min,
+            &config.twitch_key,
+        )
+        .await,
+    ));
 
     {
         server_data.write().await.restore().await;
@@ -61,59 +66,158 @@ pub async fn server_start(config: &crate::Config) {
     }
 
     let server_data_clone = server_data.clone();
-    let get_channel_info = warp::get()
-        .and(warp::path("channel"))
+    let get_yt_channel_info = warp::get()
+        .and(warp::path("yt-ch"))
         .and(warp::query::<HashMap<String, String>>())
         .then(move |query: HashMap<String, String>| {
             let server_data_clone2: Arc<RwLock<ServerData>> = server_data_clone.clone();
             async move {
                 let response_data = match query.get("q") {
-                    None => ChannelInfoResponse::error(
+                    None => YtChannelInfoResponse::error(
                         "Please provide channel name with \"q\" get parameter".to_string(),
                     ),
-                    Some(url) => match get_channel_id_by_url(&format!(
-                        "https://www.youtube.com/channel/{}",
-                        try_youtube_id(url).await
-                    ))
-                    .await
-                    {
-                        Ok(id) => {
-                            if !server_data_clone2
-                                .read()
-                                .await
-                                .yt_channels
-                                .contains_key(&id)
-                            {
-                                if let Err(e) = {
-                                    server_data_clone2
-                                        .write()
-                                        .await
-                                        .track_new_channels(&[&id])
-                                        .await
-                                } {
-                                    log::error!("Track new channel failed: {:?}", e);
-                                    return serde_json::to_string(&ChannelInfoResponse::error(
-                                        format!("Track new channel failed: {:?}", e),
-                                    ))
-                                    .unwrap();
+                    Some(url) => {
+                        if !validate_custom_url(
+                            url.trim_start_matches("https://www.youtube.com/@")
+                                .trim_start_matches('@')
+                                .trim_end_matches("/featured"),
+                        ) {
+                            return serde_json::to_string(&YtChannelInfoResponse::error(
+                                "The query string does not like a youtube user".to_string(),
+                            ))
+                            .unwrap();
+                        }
+                        match get_channel_id_by_url(&format!(
+                            "https://www.youtube.com/channel/{}",
+                            try_youtube_id(url).await
+                        ))
+                        .await
+                        {
+                            Ok(id) => {
+                                if !server_data_clone2
+                                    .read()
+                                    .await
+                                    .yt_channels
+                                    .contains_key(&id)
+                                {
+                                    if let Err(e) = {
+                                        server_data_clone2
+                                            .write()
+                                            .await
+                                            .track_new_yt_channels(&[&id])
+                                            .await
+                                    } {
+                                        log::error!("Track new youtube channel failed: {:?}", e);
+                                        return serde_json::to_string(
+                                            &YtChannelInfoResponse::error(format!(
+                                                "Track new youtube channel failed: {:?}",
+                                                e
+                                            )),
+                                        )
+                                        .unwrap();
+                                    }
                                 }
+                                let mut server_data = server_data_clone2.write().await;
+                                server_data.touch_yt_channel(&id);
+                                let channel_save = server_data.yt_channels.get(&id).unwrap();
+                                YtChannelInfoResponse::data(ChannelInfoData {
+                                    id,
+                                    title: channel_save.title.clone(),
+                                    custom_url: channel_save.custom_url.clone(),
+                                    thumbnail: channel_save.thumbnail.clone(),
+                                })
                             }
-                            let mut server_data = server_data_clone2.write().await;
-                            server_data.touch_channel(&id);
-                            let channel_save = server_data.yt_channels.get(&id).unwrap();
-                            ChannelInfoResponse::data(ChannelInfoData {
-                                id,
-                                title: channel_save.title.clone(),
-                                custom_url: channel_save.custom_url.clone(),
-                                thumbnail: channel_save.thumbnail.clone(),
-                            })
+                            Err(e) => YtChannelInfoResponse::error(format!(
+                                "Failed to get channel id: {:?}",
+                                e
+                            )),
                         }
-                        Err(e) => {
-                            ChannelInfoResponse::error(format!("Failed to get channel id: {:?}", e))
-                        }
-                    },
+                    }
                 };
                 serde_json::to_string(&response_data).unwrap()
+            }
+        });
+
+    let server_data_clone = server_data.clone();
+    let get_tw_channel_info = warp::get()
+        .and(warp::path("tw-ch"))
+        .and(warp::query::<HashMap<String, String>>())
+        .then(move |query: HashMap<String, String>| {
+            let server_data_clone2: Arc<RwLock<ServerData>> = server_data_clone.clone();
+            async move {
+                let query_string = match query.get("q") {
+                    Some(s) => s,
+                    None => {
+                        return serde_json::to_string(&YtChannelInfoResponse::error(
+                            "Please provide channel name with \"q\" get parameter".to_string(),
+                        ))
+                        .unwrap();
+                    }
+                };
+                let query_string = query_string
+                    .trim_start_matches("https://www.twitch.tv/")
+                    .to_string();
+                if !validate_user_login(&query_string) {
+                    return serde_json::to_string(&YtChannelInfoResponse::error(
+                        "The query string does not like a twitter user login".to_string(),
+                    ))
+                    .unwrap();
+                }
+                let search_result =
+                    if let Some(client) = &mut server_data_clone2.write().await.tw_client {
+                        match client
+                            .get_user_info(&[UserIdentity::Login(query_string)])
+                            .await
+                        {
+                            Ok(r) => r,
+                            Err(e) => {
+                                log::error!("Search channel failed: {e}");
+                                return serde_json::to_string(&YtChannelInfoResponse::error(
+                                    format!("Search channel failed: {e}",),
+                                ))
+                                .unwrap();
+                            }
+                        }
+                    } else {
+                        log::error!("Twitch client is not initialized");
+                        return serde_json::to_string(&YtChannelInfoResponse::error(
+                            "Twitch client is not initialized".to_string(),
+                        ))
+                        .unwrap();
+                    };
+                if let Some(c) = search_result.first() {
+                    let mut server_data = server_data_clone2.write().await;
+                    if !server_data.tw_channels.contains_key(&c.login) {
+                        server_data.tw_channels.insert(
+                            c.login.clone(),
+                            TwChannelSave {
+                                id: c.id.clone(),
+                                login: c.login.clone(),
+                                profile_img: c.profile_image_url.clone(),
+                                name: c.display_name.clone(),
+                                last_time_used: Utc::now(),
+                            },
+                        );
+                        dbg!("trigger by get info");
+                        server_data.check_tw_upcoming_event(None).await;
+                        server_data.save().await;
+                    }
+                    server_data.touch_tw_channel(&c.login);
+                    let channel_save = server_data.tw_channels.get(&c.login).unwrap();
+                    return serde_json::to_string(&YtChannelInfoResponse::data(ChannelInfoData {
+                        id: channel_save.id.clone(),
+                        custom_url: channel_save.login.clone(),
+                        title: channel_save.name.clone(),
+                        thumbnail: channel_save.profile_img.clone(),
+                    }))
+                    .unwrap();
+                } else {
+                    log::error!("Search channel failed: Not found");
+                    return serde_json::to_string(&YtChannelInfoResponse::error(
+                        "Search channel failed: Not found".to_string(),
+                    ))
+                    .unwrap();
+                }
             }
         });
 
@@ -125,39 +229,56 @@ pub async fn server_start(config: &crate::Config) {
             let server_data_clone2 = server_data_clone.clone();
             async move {
                 let mut response: Vec<UpcomingEvent> = vec![];
-                if let Some(query_str) = query.get("channels") {
-                    let mut ids: Vec<String> = vec![];
+                let mut yt_channel_ids: Vec<String> = vec![];
+                let mut tw_channel_logins: Vec<String> = vec![];
+                if let Some(query_str) = query.get("yt-ch") {
                     for id in query_str.split(',') {
-                        ids.push(try_youtube_id(id).await);
+                        yt_channel_ids.push(try_youtube_id(id).await);
                     }
                     let new_channel_ids = {
                         server_data_clone2
                             .read()
                             .await
-                            .filter_new_yt_channel_id(&ids)
+                            .filter_new_yt_channel_id(&yt_channel_ids)
                     };
                     if !new_channel_ids.is_empty() {
                         if let Err(e) = server_data_clone2
                             .write()
                             .await
-                            .track_new_channels(&new_channel_ids)
+                            .track_new_yt_channels(&new_channel_ids)
                             .await
                         {
-                            log::error!("Track new channel failed: {:?}", e);
+                            log::error!("Track new youtube channel failed: {:?}", e);
                         };
                     }
-
-                    let events = {
-                        let mut server_data = server_data_clone2.write().await;
-                        for id in ids.iter() {
-                            server_data.touch_channel(id);
-                        }
-                        server_data.events.clone()
-                    };
-                    response.extend(events.into_iter().filter(|e| match &e.source {
-                        EventSource::YoutubeChannel(c) => ids.contains(&c.id),
-                    }));
                 }
+                if let Some(query_str) = query.get("tw-ch") {
+                    tw_channel_logins.extend(query_str.split(',').map(|s| s.to_string()));
+                    let new_tw_channel_logins = {
+                        server_data_clone2
+                            .read()
+                            .await
+                            .filter_new_tw_channel_login(&tw_channel_logins)
+                    };
+                    if !new_tw_channel_logins.is_empty() {
+                        server_data_clone2
+                            .write()
+                            .await
+                            .track_new_tw_channels(&new_tw_channel_logins)
+                            .await;
+                    }
+                }
+                let events = {
+                    let mut server_data = server_data_clone2.write().await;
+                    for id in yt_channel_ids.iter() {
+                        server_data.touch_yt_channel(id);
+                    }
+                    server_data.events.clone()
+                };
+                response.extend(events.into_iter().filter(|e| match &e.source {
+                    EventSource::YoutubeChannel(c) => yt_channel_ids.contains(&c.id),
+                    EventSource::TwitchChannel(c) => tw_channel_logins.contains(&c.login),
+                }));
                 response.sort();
                 serde_json::to_string(&response).unwrap()
             }
@@ -175,45 +296,62 @@ pub async fn server_start(config: &crate::Config) {
                     Some(v) => v.to_lowercase() == "true" || v.to_lowercase() == "yes",
                     None => false,
                 };
-                cal.name("VT calendar");
-                if let Some(query_str) = query.get("channels") {
-                    let mut ids: Vec<String> = vec![];
+                cal.name("Stream Calendar");
+                let mut yt_channel_ids: Vec<String> = vec![];
+                if let Some(query_str) = query.get("yt-ch") {
                     for id in query_str.split(',') {
-                        ids.push(try_youtube_id(id).await);
+                        yt_channel_ids.push(try_youtube_id(id).await);
                     }
                     let new_channel_ids = {
                         server_data_clone2
                             .read()
                             .await
-                            .filter_new_yt_channel_id(&ids)
+                            .filter_new_yt_channel_id(&yt_channel_ids)
                     };
                     if !new_channel_ids.is_empty() {
                         if let Err(e) = server_data_clone2
                             .write()
                             .await
-                            .track_new_channels(&new_channel_ids)
+                            .track_new_yt_channels(&new_channel_ids)
                             .await
                         {
-                            log::error!("Track new channel failed: {:?}", e);
+                            log::error!("Track new youtube channel failed: {:?}", e);
                         };
                     }
-
-                    let events = {
-                        let mut server_data = server_data_clone2.write().await;
-                        for id in ids.iter() {
-                            server_data.touch_channel(id);
-                        }
-                        server_data.events.clone()
-                    };
-                    cal.extend(
-                        events
-                            .into_iter()
-                            .filter(|e: &UpcomingEvent| match &e.source {
-                                EventSource::YoutubeChannel(c) => ids.contains(&c.id),
-                            })
-                            .map(|e| e.to_ical_event(alarm_enabled)),
-                    );
                 }
+                let mut tw_channel_logins = vec![];
+                if let Some(query_str) = query.get("tw-ch") {
+                    tw_channel_logins.extend(query_str.split(',').map(|s| s.to_string()));
+                    let new_tw_channel_logins = {
+                        server_data_clone2
+                            .read()
+                            .await
+                            .filter_new_tw_channel_login(&tw_channel_logins)
+                    };
+                    if !new_tw_channel_logins.is_empty() {
+                        server_data_clone2
+                            .write()
+                            .await
+                            .track_new_tw_channels(&new_tw_channel_logins)
+                            .await;
+                    }
+                }
+                let events = {
+                    let mut server_data = server_data_clone2.write().await;
+                    for id in yt_channel_ids.iter() {
+                        server_data.touch_yt_channel(id);
+                    }
+                    server_data.events.clone()
+                };
+                cal.extend(
+                    events
+                        .into_iter()
+                        .filter(|e: &UpcomingEvent| match &e.source {
+                            EventSource::YoutubeChannel(c) => yt_channel_ids.contains(&c.id),
+                            EventSource::TwitchChannel(c) => tw_channel_logins.contains(&c.login),
+                        })
+                        .map(|e: UpcomingEvent| e.to_ical_event(alarm_enabled)),
+                );
                 cal.done().to_string()
             }
         });
@@ -243,9 +381,10 @@ pub async fn server_start(config: &crate::Config) {
             if let Some((https_socket, cert, key)) = tls_info {
                 let routes = warp::get().and(
                     warp::fs::dir("www")
-                        .or(get_channel_info)
+                        .or(get_yt_channel_info)
                         .or(get_data_endpoint)
-                        .or(get_calendar_endpoint),
+                        .or(get_calendar_endpoint)
+                        .or(get_tw_channel_info),
                 );
                 futures::join!(
                     warp::serve(routes.clone()).run(http_socket),
@@ -259,9 +398,10 @@ pub async fn server_start(config: &crate::Config) {
                 warp::serve(
                     warp::get().and(
                         warp::fs::dir("www")
-                            .or(get_channel_info)
+                            .or(get_yt_channel_info)
                             .or(get_data_endpoint)
-                            .or(get_calendar_endpoint),
+                            .or(get_calendar_endpoint)
+                            .or(get_tw_channel_info),
                     ),
                 )
                 .run(http_socket)
@@ -274,8 +414,9 @@ pub async fn server_start(config: &crate::Config) {
                 let routes = warp::get().and(
                     warp::fs::dir("www")
                         .with(compression)
-                        .or(get_channel_info.with(compression))
+                        .or(get_yt_channel_info.with(compression))
                         .or(get_data_endpoint.with(compression))
+                        .or(get_tw_channel_info.with(compression))
                         .or(get_calendar_endpoint),
                 );
                 futures::join!(
@@ -291,8 +432,9 @@ pub async fn server_start(config: &crate::Config) {
                     warp::get().and(
                         warp::fs::dir("www")
                             .with(compression)
-                            .or(get_channel_info.with(compression))
+                            .or(get_yt_channel_info.with(compression))
                             .or(get_data_endpoint.with(compression))
+                            .or(get_tw_channel_info.with(compression))
                             .or(get_calendar_endpoint),
                     ),
                 )
@@ -306,8 +448,9 @@ pub async fn server_start(config: &crate::Config) {
                 let routes = warp::get().and(
                     warp::fs::dir("www")
                         .with(compression)
-                        .or(get_channel_info.with(compression))
+                        .or(get_yt_channel_info.with(compression))
                         .or(get_data_endpoint.with(compression))
+                        .or(get_tw_channel_info.with(compression))
                         .or(get_calendar_endpoint),
                 );
                 futures::join!(
@@ -323,8 +466,9 @@ pub async fn server_start(config: &crate::Config) {
                     warp::get().and(
                         warp::fs::dir("www")
                             .with(compression)
-                            .or(get_channel_info.with(compression))
+                            .or(get_yt_channel_info.with(compression))
                             .or(get_data_endpoint.with(compression))
+                            .or(get_tw_channel_info.with(compression))
                             .or(get_calendar_endpoint),
                     ),
                 )
@@ -338,8 +482,9 @@ pub async fn server_start(config: &crate::Config) {
                 let routes = warp::get().and(
                     warp::fs::dir("www")
                         .with(compression)
-                        .or(get_channel_info.with(compression))
+                        .or(get_yt_channel_info.with(compression))
                         .or(get_data_endpoint.with(compression))
+                        .or(get_tw_channel_info.with(compression))
                         .or(get_calendar_endpoint),
                 );
                 futures::join!(
@@ -355,8 +500,9 @@ pub async fn server_start(config: &crate::Config) {
                     warp::get().and(
                         warp::fs::dir("www")
                             .with(compression)
-                            .or(get_channel_info.with(compression))
+                            .or(get_yt_channel_info.with(compression))
                             .or(get_data_endpoint.with(compression))
+                            .or(get_tw_channel_info.with(compression))
                             .or(get_calendar_endpoint),
                     ),
                 )
@@ -365,6 +511,12 @@ pub async fn server_start(config: &crate::Config) {
             }
         }
     }
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+struct ChannelSave {
+    yt: HashMap<String, YtChannelSave>,
+    tw: HashMap<String, TwChannelSave>,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -377,6 +529,35 @@ struct YtChannelSave {
     last_time_used: DateTime<Utc>,
     first_video_after_all_stream: String,
 }
+
+#[derive(Debug, Serialize, Deserialize, Clone, Hash)]
+struct TwChannelSave {
+    id: String,
+    login: String,
+    profile_img: String,
+    name: String,
+    last_time_used: DateTime<Utc>,
+}
+
+impl From<crate::tw_api::structs::UserInformation> for TwChannelSave {
+    fn from(value: crate::tw_api::structs::UserInformation) -> Self {
+        Self {
+            id: value.id,
+            login: value.login,
+            profile_img: value.profile_image_url,
+            name: value.display_name,
+            last_time_used: Utc::now(),
+        }
+    }
+}
+
+impl PartialEq for TwChannelSave {
+    fn eq(&self, other: &Self) -> bool {
+        self.id == other.id
+    }
+}
+
+impl Eq for TwChannelSave {}
 
 #[derive(Debug, Serialize, Deserialize, Default)]
 struct YtVideosSave {
@@ -431,7 +612,7 @@ impl ToString for YtVideosSave {
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Eq)]
-pub struct ChannelBrief {
+pub struct YtChannelBrief {
     id: String,
     thumbnail_url: String,
     title: String,
@@ -439,11 +620,20 @@ pub struct ChannelBrief {
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Eq)]
-pub enum EventSource {
-    YoutubeChannel(ChannelBrief),
+pub struct TwChannelBrief {
+    id: String,
+    thumbnail_url: String,
+    title: String,
+    login: String,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Eq)]
+pub enum EventSource {
+    YoutubeChannel(YtChannelBrief),
+    TwitchChannel(TwChannelBrief),
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct UpcomingEvent {
     start_date_time: DateTime<Utc>,
     start_timestamp_millis: i64,
@@ -472,6 +662,9 @@ impl UpcomingEvent {
             EventSource::YoutubeChannel(c) => {
                 description += &format!("{}\n{}\n\n", c.title, c.custom_url);
             }
+            EventSource::TwitchChannel(c) => {
+                description += &format!("{}({})\n\n", c.title, c.login);
+            }
         }
         description += &self.description;
         builder.description(&description);
@@ -483,6 +676,14 @@ impl UpcomingEvent {
         builder.done()
     }
 }
+
+impl PartialEq for UpcomingEvent {
+    fn eq(&self, other: &Self) -> bool {
+        self.uid == other.uid
+    }
+}
+
+impl Eq for UpcomingEvent {}
 
 impl PartialOrd for UpcomingEvent {
     fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
@@ -562,7 +763,7 @@ impl TryFrom<(&Video::Resource, &ServerData)> for UpcomingEvent {
                                     snippet.channelId.clone(),
                                 ))
                             }
-                            Some(c) => ChannelBrief {
+                            Some(c) => YtChannelBrief {
                                 id: c.id.clone(),
                                 thumbnail_url: c.thumbnail.clone(),
                                 title: c.title.clone(),
@@ -570,9 +771,30 @@ impl TryFrom<(&Video::Resource, &ServerData)> for UpcomingEvent {
                             },
                         },
                     ),
-                    uid: format!("{}@yt-watcher", value.0.id),
+                    uid: format!("{}@yt@yt-watcher", value.0.id),
                 });
             }
+        }
+    }
+}
+
+impl From<(StreamInformation, String)> for UpcomingEvent {
+    fn from(value: (StreamInformation, String)) -> Self {
+        Self {
+            start_timestamp_millis: value.0.started_at.timestamp_millis(),
+            start_date_time: value.0.started_at,
+            thumbnail_url: Some(process_thumbnail_url(&value.0.thumbnail_url, 320, 180)),
+            title: value.0.title,
+            description: value.0.game_name,
+            target_url: format!("https://www.twitch.tv/{}", &value.0.user_login),
+            ongoing: true,
+            uid: format!("{}@twitch@yt-watcher", &value.0.user_login),
+            source: EventSource::TwitchChannel(TwChannelBrief {
+                id: value.0.user_id,
+                title: value.0.user_name,
+                login: value.0.user_login,
+                thumbnail_url: value.1,
+            }),
         }
     }
 }
@@ -581,6 +803,8 @@ impl TryFrom<(&Video::Resource, &ServerData)> for UpcomingEvent {
 pub struct ServerData {
     yt_channels: HashMap<String, YtChannelSave>,
     yt_videos: YtVideosSave,
+    tw_channels: HashMap<String, TwChannelSave>,
+    tw_client: Option<TwApiClient>,
     events: Vec<UpcomingEvent>,
     api_key: String,
     channel_save_path: String,
@@ -589,18 +813,35 @@ pub struct ServerData {
 }
 
 impl ServerData {
-    fn new(
+    async fn new(
         api_key: &str,
         channel_save_path: String,
         video_save_path: String,
         channel_expire_min: i64,
+        twitch_app_key: &Option<TwAppKey>,
     ) -> Self {
-        Self {
-            api_key: api_key.to_string(),
-            channel_save_path,
-            video_save_path,
-            channel_expire_min,
-            ..Default::default()
+        if let Some(tw_key) = twitch_app_key {
+            Self {
+                api_key: api_key.to_string(),
+                channel_save_path,
+                video_save_path,
+                channel_expire_min,
+                tw_client: Some(
+                    TwApiClient::new(tw_key.client_id.clone(), tw_key.client_secret.clone())
+                        .await
+                        .expect("Incorrect Twitch app key"),
+                ),
+                ..Default::default()
+            }
+        } else {
+            Self {
+                api_key: api_key.to_string(),
+                channel_save_path,
+                video_save_path,
+                channel_expire_min,
+                tw_client: None,
+                ..Default::default()
+            }
         }
     }
 
@@ -697,11 +938,45 @@ impl ServerData {
                     c.first_video_after_all_stream = video_id;
                 }
             });
+        self.check_tw_upcoming_event(Some(&mut events)).await;
         self.events = events;
         self.save().await;
     }
+    pub async fn check_tw_upcoming_event(&mut self, events: Option<&mut Vec<UpcomingEvent>>) {
+        let mut events_vec = vec![];
+        let is_none = events.is_none();
+        let event_ref = events.unwrap_or(&mut events_vec);
+        let channel_ids = self
+            .tw_channels
+            .values()
+            .map(|c| UserIdentity::Id(c.id.clone()))
+            .collect::<Vec<UserIdentity>>();
+        match &mut self.tw_client {
+            None => log::error!("Twitch client is not initialized"),
+            Some(client) => match client.get_stream_info(&channel_ids).await {
+                Err(e) => log::error!("Get stream info failed: {e}"),
+                Ok(streams) => event_ref.extend(streams.into_iter().map(|s| {
+                    let profile_url: String = self
+                        .tw_channels
+                        .get(&s.user_login)
+                        .unwrap()
+                        .profile_img
+                        .clone();
+                    (s, profile_url).into()
+                })),
+            },
+        }
 
-    pub async fn track_new_channels(&mut self, ids: &[&str]) -> Result<(), YtApiError> {
+        if is_none {
+            for e in events_vec.into_iter() {
+                if let Some(n) = self.events.iter().position(|event| *event == e) {
+                    self.events.remove(n);
+                }
+                self.events.push(e);
+            }
+        }
+    }
+    pub async fn track_new_yt_channels(&mut self, ids: &[&str]) -> Result<(), YtApiError> {
         let channels = get_all_channels(
             ids,
             &GetChannelParts::default().snippet().content_details(),
@@ -795,6 +1070,54 @@ impl ServerData {
         Ok(())
     }
 
+    pub async fn track_new_tw_channels(&mut self, logins: &[String]) {
+        match &mut self.tw_client {
+            Some(client) => match client
+                .get_user_info(
+                    &logins
+                        .iter()
+                        .map(|s| UserIdentity::Login(s.clone()))
+                        .collect::<Vec<UserIdentity>>(),
+                )
+                .await
+            {
+                Ok(channels) => {
+                    self.tw_channels.extend(channels.iter().map(|c| {
+                        log::info!("Tracking new twitch channel: {}", &c.login);
+                        (c.login.clone(), c.clone().into())
+                    }));
+                    match client
+                        .get_stream_info(
+                            channels
+                                .iter()
+                                .map(|c| UserIdentity::Login(c.login.clone()))
+                                .collect::<Vec<UserIdentity>>()
+                                .as_slice(),
+                        )
+                        .await
+                    {
+                        Ok(streams) => self.events.extend(streams.into_iter().map(|s| {
+                            (
+                                s.clone(),
+                                self.tw_channels
+                                    .get(&s.user_login)
+                                    .unwrap()
+                                    .profile_img
+                                    .clone(),
+                            )
+                                .into()
+                        })),
+                        Err(e) => log::error!("Get stream info failed: {e}"),
+                    }
+                }
+                Err(e) => log::error!("Get user info failed: {e}"),
+            },
+            None => log::error!("Twitch client is not initialized"),
+        }
+        self.check_tw_upcoming_event(None).await;
+        self.save().await;
+    }
+
     fn filter_new_yt_channel_id<'a>(&self, channel_ids: &'a [String]) -> Vec<&'a str> {
         channel_ids
             .iter()
@@ -803,8 +1126,19 @@ impl ServerData {
             .collect()
     }
 
+    fn filter_new_tw_channel_login<'a>(&self, channel_logins: &'a [String]) -> Vec<String> {
+        channel_logins
+            .iter()
+            .filter(|l| !self.tw_channels.contains_key(*l))
+            .cloned()
+            .collect()
+    }
+
     async fn save(&self) {
-        match serde_json::to_string(&self.yt_channels) {
+        match serde_json::to_string(&ChannelSave {
+            yt: self.yt_channels.clone(),
+            tw: self.tw_channels.clone(),
+        }) {
             Ok(save_string) => {
                 if let Err(e) = tokio::fs::write(&self.channel_save_path, save_string).await {
                     log::error!(
@@ -824,16 +1158,17 @@ impl ServerData {
 
     async fn restore(&mut self) {
         match tokio::fs::read_to_string(&self.channel_save_path).await {
-            Ok(save_string) => {
-                match serde_json::from_str::<HashMap<String, YtChannelSave>>(&save_string) {
-                    Ok(channel) => self.yt_channels = channel,
-                    Err(e) => log::error!(
-                        "Deserialize save file {} failed: {}",
-                        self.channel_save_path,
-                        e
-                    ),
+            Ok(save_string) => match serde_json::from_str::<ChannelSave>(&save_string) {
+                Ok(save) => {
+                    self.yt_channels = save.yt;
+                    self.tw_channels = save.tw;
                 }
-            }
+                Err(e) => log::error!(
+                    "Deserialize save file {} failed: {}",
+                    self.channel_save_path,
+                    e
+                ),
+            },
             Err(e) => {
                 log::error!("Read save file {} failed: {}", self.channel_save_path, e);
                 return;
@@ -865,7 +1200,24 @@ impl ServerData {
                 self.yt_channels.remove(id);
             }
         }
-        if self.yt_channels.is_empty() {
+        let tw_channel_logins = self.tw_channels.keys().cloned().collect::<Vec<String>>();
+        for login in tw_channel_logins.iter() {
+            if now
+                - self
+                    .tw_channels
+                    .get(login)
+                    .expect("Get twitch channel data from server data failed")
+                    .last_time_used
+                > chrono::Duration::minutes(self.channel_expire_min)
+            {
+                log::info!(
+                    "Twitch channel {login} was not accessed in the past {} mins. Will delete it.",
+                    self.channel_expire_min
+                );
+                self.tw_channels.remove(login);
+            }
+        }
+        if self.yt_channels.is_empty() && self.tw_channels.is_empty() {
             return;
         }
         match get_all_channels(
@@ -912,11 +1264,43 @@ impl ServerData {
             }
         }
 
+        if let Some(client) = &mut self.tw_client {
+            match client
+                .get_user_info(
+                    &self
+                        .tw_channels
+                        .keys()
+                        .map(|s| UserIdentity::Login(s.clone()))
+                        .collect::<Vec<UserIdentity>>(),
+                )
+                .await
+            {
+                Err(e) => log::error!("Get user info failed: {e}"),
+                Ok(users) => {
+                    for user in users.iter() {
+                        let channel_save = self
+                            .tw_channels
+                            .get_mut(&user.login)
+                            .expect("Get channel save by login failed");
+                        channel_save.login = user.id.clone();
+                        channel_save.profile_img = user.profile_image_url.clone();
+                        channel_save.name = user.display_name.clone();
+                    }
+                }
+            }
+        }
+
         self.save().await;
     }
 
-    pub fn touch_channel(&mut self, id: &str) {
+    pub fn touch_yt_channel(&mut self, id: &str) {
         if let Some(ch) = self.yt_channels.get_mut(id) {
+            ch.last_time_used = Utc::now();
+        }
+    }
+
+    pub fn touch_tw_channel(&mut self, login: &str) {
+        if let Some(ch) = self.tw_channels.get_mut(login) {
             ch.last_time_used = Utc::now();
         }
     }

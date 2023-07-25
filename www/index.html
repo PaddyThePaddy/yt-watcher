@@ -20,14 +20,25 @@
           onkeydown="clear_id()"
         />
         <br />
-        <button id="check_btn" onclick="check_channel()">Check</button>
-        <button id="follow_btn" onclick="follow_btn()" hidden="true">
-          Follow
-        </button>
         <button onclick="clear_id()">Clear</button>
         <button onclick="import_channel_list()">Import list</button>
         <br />
-        <div id="channel_preview"></div>
+        <button id="check_yt_btn" onclick="check_yt_channel()">
+          Check Youtube
+        </button>
+        <button id="follow_yt_btn" onclick="follow_yt_btn()" hidden="true">
+          Follow Youtube
+        </button>
+        <br />
+        <div id="yt_channel_preview"></div>
+        <button id="check_tw_btn" onclick="check_tw_channel()">
+          Check Twitch
+        </button>
+        <button id="follow_tw_btn" onclick="follow_tw_btn()" hidden="true">
+          Follow Twitch
+        </button>
+        <br />
+        <div id="tw_channel_preview"></div>
         <button onclick="update_video_list()">Update video list</button>
         <br />
         <div>
@@ -37,7 +48,11 @@
           <span class="popup" id="copy_popup">Copied!</span>
         </div>
         <hr />
+        <span id="channel_count"></span>
         <ul id="channel_id_list"></ul>
+        <button onclick="set_id_list(''); update_channel_id_list();">
+          Clear All
+        </button>
         <hr />
         <p>
           About:<br />
