@@ -66,7 +66,7 @@ static CHANNEL_ID_PATTERNS: [(Lazy<Regex>, usize); 4] = [
         1,
     ),
 ];
-static CUSTOM_URL_PATTERN: Lazy<Regex> = Lazy::new(|| regex::Regex::new(r"^\w+$").unwrap());
+static CUSTOM_URL_PATTERN: Lazy<Regex> = Lazy::new(|| regex::Regex::new(r"^[\w.-]+$").unwrap());
 
 pub fn validate_custom_url(custom_url: &str) -> bool {
     CUSTOM_URL_PATTERN.is_match(custom_url)
