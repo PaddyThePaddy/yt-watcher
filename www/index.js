@@ -340,13 +340,23 @@ function render_video_list() {
     console.log("video_data is empty");
     return;
   }
+  let ongoing_count = 0;
+  let upcoming_count = 0;
   for (data of video_data) {
     if (data.ongoing) {
       ongoing_video_frame.appendChild(build_video_preview(data));
+      ongoing_count += 1;
     } else {
       upcoming_video_frame.appendChild(build_video_preview(data));
+      upcoming_count += 1;
     }
   }
+  document.getElementById(
+    "ongoing_header"
+  ).innerHTML = `Ongoing Streams (${ongoing_count})`;
+  document.getElementById(
+    "upcoming_header"
+  ).innerHTML = `Upcoming Streams (${upcoming_count})`;
 }
 
 function build_video_preview(data) {
