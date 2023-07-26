@@ -7,6 +7,7 @@ use lru::LruCache;
 use once_cell::sync::Lazy;
 use regex::Regex;
 use reqwest::{self, StatusCode};
+use std::time::Duration;
 use structs::*;
 use tokio::io::AsyncWriteExt;
 
@@ -615,17 +616,42 @@ static VIDEO_ID_PATTERN: Lazy<Regex> =
     Lazy::new(|| regex::Regex::new("<yt:videoId>(.+?)</yt:videoId>").unwrap());
 
 pub async fn get_video_list_through_rss(channel_id: &str) -> Result<Vec<String>, YtApiError> {
-    let feed_body = reqwest::get(format!(
+    let feed_body = match reqwest::get(format!(
         "https://www.youtube.com/feeds/videos.xml?channel_id={}",
         channel_id
     ))
     .await
     .map_err(|e| YtApiError::RequestFailed(e.status()))?
     .error_for_status()
-    .map_err(|e| YtApiError::RequestFailed(e.status()))?
-    .text()
-    .await
-    .map_err(|e| YtApiError::DeserializeFailed(format!("{}", e.without_url())))?;
+    {
+        Ok(r) => r
+            .text()
+            .await
+            .map_err(|e| YtApiError::DeserializeFailed(format!("{}", e.without_url())))?,
+        Err(e) => {
+            if let Some(status) = e.status() {
+                if status == 429 {
+                    log::error!("Got http error 429: too many requests. Try again after 1 min...");
+                    tokio::time::sleep(Duration::from_secs(60)).await;
+                    reqwest::get(format!(
+                        "https://www.youtube.com/feeds/videos.xml?channel_id={}",
+                        channel_id
+                    ))
+                    .await
+                    .map_err(|e| YtApiError::RequestFailed(e.status()))?
+                    .error_for_status()
+                    .map_err(|e| YtApiError::RequestFailed(e.status()))?
+                    .text()
+                    .await
+                    .map_err(|e| YtApiError::DeserializeFailed(format!("{}", e.without_url())))?
+                } else {
+                    return Err(YtApiError::RequestFailed(e.status()));
+                }
+            } else {
+                return Err(YtApiError::RequestFailed(e.status()));
+            }
+        }
+    };
     Ok(VIDEO_ID_PATTERN
         .captures_iter(&feed_body)
         .map(|cap| cap.get(1).unwrap().as_str().to_string())
