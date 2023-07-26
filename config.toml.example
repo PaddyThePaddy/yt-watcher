@@ -33,3 +33,9 @@ compression= "none"
 #socket= "127.0.0.1:443"
 #cert = "dummy.cert"
 #key = "dummy.key"
+
+# APP keys for twitch api
+# Get it from: https://dev.twitch.tv/console
+#[twitch_key]
+#client_id = "<your app id>"
+#client_secret = "<your app secret>"
