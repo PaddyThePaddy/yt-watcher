@@ -368,16 +368,12 @@ function render_video_list() {
     "upcoming_header"
   ).innerHTML = `Upcoming Streams (${upcoming_count})`;
   if (starting_count != 0) {
-    const header = document.getElementById(
-      "starting_header"
-    );
+    const header = document.getElementById("starting_header");
     header.innerHTML = `Starting Streams (${starting_count})`;
     header.hidden = false;
     starting_video_frame.hidden = false;
   } else {
-    document.getElementById(
-      "starting_header"
-    ).hidden=true;
+    document.getElementById("starting_header").hidden = true;
     starting_video_frame.hidden = true;
   }
 }
@@ -507,6 +503,8 @@ function open_menu() {
   menu.style.padding = "5px";
   menu.style.overflow = "scroll";
   document.getElementById("menu_remaining_area").style.visibility = "visible";
+  document.getElementById("menu_close_btn").style.visibility = "visible";
+  document.getElementById("menu_open_btn").style.visibility = "hidden";
 }
 
 function close_menu() {
@@ -515,6 +513,8 @@ function close_menu() {
   menu.style.overflow = "hidden";
   menu.style.width = "0px";
   document.getElementById("menu_remaining_area").style.visibility = "hidden";
+  document.getElementById("menu_close_btn").style.visibility = "hidden";
+  document.getElementById("menu_open_btn").style.visibility = "visible";
 }
 
 function update_channel_id_list() {

@@ -32,7 +32,7 @@ div.video_frame {
 }
 
 div.video_frame:hover {
-  background-color: #FFFFFF10;
+  background-color: #ffffff10;
 }
 
 div.twitch_video_card {
@@ -160,6 +160,45 @@ span.channel_name {
   color: rgb(145, 145, 255);
 }
 
-img.video_thumbnail{
+img.video_thumbnail {
   border-radius: 5px;
+}
+
+button#menu_open_btn {
+  position: fixed;
+  top: 0px;
+  left: 0px;
+  margin: 10px;
+}
+button#menu_close_btn {
+  visibility: hidden;
+}
+div#menu_footer {
+  visibility: hidden;
+}
+
+@media (pointer: none), (pointer: coarse) {
+  button#menu_open_btn {
+    position: fixed;
+    top: auto;
+    bottom: 0px;
+    left: 0px;
+    margin: 10px;
+  }
+  button#menu_close_btn {
+    position: fixed;
+    top: auto;
+    bottom: 0px;
+    left: 0px;
+    margin: 10px;
+  }
+  div#menu_footer {
+    height: 30px;
+    visibility: visable;
+  }
+}
+@media (pointer: fine) {
+  div.main_frame {
+    padding-top: 30px;
+  }
 }
