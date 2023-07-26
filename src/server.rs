@@ -198,7 +198,6 @@ pub async fn server_start(config: &crate::Config) {
                                 last_time_used: Utc::now(),
                             },
                         );
-                        dbg!("trigger by get info");
                         server_data.check_tw_upcoming_event(None).await;
                         server_data.save().await;
                     }
@@ -366,8 +365,6 @@ pub async fn server_start(config: &crate::Config) {
                 let minutes =
                     (video_refresh_interval - 1) - now.minute() as u64 % video_refresh_interval;
                 let seconds = 60 - now.second() as u64;
-                log::error!("minutes = {minutes}");
-                log::error!("seconds = {seconds}");
                 tokio::time::sleep(Duration::from_secs(
                     (minutes * 60 + seconds + video_refresh_delay) % (video_refresh_interval * 60),
                 ))
