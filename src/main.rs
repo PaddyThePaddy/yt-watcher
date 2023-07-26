@@ -33,6 +33,7 @@ pub struct Config {
     compression: Compression,
     tls: Option<Tls>,
     twitch_key: Option<TwAppKey>,
+    video_refresh_delay: Option<u64>,
 }
 
 #[derive(Debug, Deserialize, Clone)]

@@ -8,6 +8,11 @@ socket= "127.0.0.1:80"
 # Will cost about <videos to be updated> / 50 quota
 video_refresh_interval= 10
 
+# The refresh delay in seconds
+# The server will try to align the refresh time at <video_refresh_interval in an hour + video_refresh_delay>
+# When video_refresh_interval is in the range 2..=60
+video_refresh_delay = 60
+
 # Interval between updating channel info. In minutes.
 # Will cost about <channels to be updated> / 50 quota
 channel_refresh_interval= 1440

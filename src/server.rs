@@ -11,7 +11,7 @@ use crate::{
     yt_api::{structs::*, *},
     Compression, TwAppKey,
 };
-use chrono::{DateTime, Utc};
+use chrono::{DateTime, Timelike, Utc};
 use icalendar::{Alarm, Component, EventLike};
 use serde::{Deserialize, Serialize};
 use tokio::sync::RwLock;
@@ -358,9 +358,23 @@ pub async fn server_start(config: &crate::Config) {
 
     let server_data_clone = server_data.clone();
     let video_refresh_interval = config.video_refresh_interval;
+    let video_refresh_delay = config.video_refresh_delay.unwrap_or(60);
     let _handle = tokio::spawn(async move {
         loop {
-            tokio::time::sleep(Duration::from_secs(60 * video_refresh_interval)).await;
+            if video_refresh_interval > 1 && video_refresh_interval <= 60 {
+                let now = Utc::now();
+                let minutes =
+                    (video_refresh_interval - 1) - now.minute() as u64 % video_refresh_interval;
+                let seconds = 60 - now.second() as u64;
+                log::error!("minutes = {minutes}");
+                log::error!("seconds = {seconds}");
+                tokio::time::sleep(Duration::from_secs(
+                    (minutes * 60 + seconds + video_refresh_delay) % (video_refresh_interval * 60),
+                ))
+                .await;
+            } else {
+                tokio::time::sleep(Duration::from_secs(60 * video_refresh_interval)).await;
+            }
             log::info!("Updating upcoming event");
             let mut data = server_data_clone.write().await;
             data.check_upcoming_event().await;
