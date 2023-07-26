@@ -365,6 +365,7 @@ function build_video_preview(data) {
   link.href = data.target_url;
   const img = document.createElement("img");
   img.src = data.thumbnail_url;
+  img.classList.add("video_thumbnail");
   const title = document.createElement("div");
   title.innerHTML = data.title;
   title.classList = "video_title";
@@ -418,6 +419,9 @@ function build_video_preview(data) {
   link.appendChild(lower_part_div);
   frame.appendChild(link);
   frame.classList.add("video_frame");
+  if (start_time < (new Date())) {
+    frame.classList.add("video_started")
+  }
   return frame;
 }
 
