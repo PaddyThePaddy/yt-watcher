@@ -27,7 +27,14 @@ div.video_frame {
   margin: 0.5rem;
   padding: 0.5em;
   border-radius: 8px;
+  transition: background-color 0.1s;
+  background-clip: padding-box;
 }
+
+div.video_frame:hover {
+  background-color: #FFFFFF10;
+}
+
 div.twitch_video_card {
   border: solid rgb(145, 71, 255, 0.3);
 }
@@ -151,10 +158,6 @@ div.icon_div > a {
 
 span.channel_name {
   color: rgb(145, 145, 255);
-}
-
-div.video_started {
-  background-color: #FFFFFF20;
 }
 
 img.video_thumbnail{

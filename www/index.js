@@ -329,11 +329,15 @@ function render_video_list() {
   console.log(new Date() + " rendering video list");
   const ongoing_video_frame = document.getElementById("ongoing_video_frame");
   const upcoming_video_frame = document.getElementById("upcoming_video_frame");
+  const starting_video_frame = document.getElementById("starting_video_frame");
   while (ongoing_video_frame.childElementCount != 0) {
     ongoing_video_frame.removeChild(ongoing_video_frame.firstChild);
   }
   while (upcoming_video_frame.childElementCount != 0) {
     upcoming_video_frame.removeChild(upcoming_video_frame.firstChild);
+  }
+  while (starting_video_frame.childElementCount != 0) {
+    starting_video_frame.removeChild(starting_video_frame.firstChild);
   }
 
   if (video_data == null) {
@@ -342,13 +346,19 @@ function render_video_list() {
   }
   let ongoing_count = 0;
   let upcoming_count = 0;
+  let starting_count = 0;
   for (data of video_data) {
     if (data.ongoing) {
       ongoing_video_frame.appendChild(build_video_preview(data));
       ongoing_count += 1;
     } else {
-      upcoming_video_frame.appendChild(build_video_preview(data));
-      upcoming_count += 1;
+      if (data.start_timestamp_millis < Date.now()) {
+        starting_video_frame.appendChild(build_video_preview(data));
+        starting_count += 1;
+      } else {
+        upcoming_video_frame.appendChild(build_video_preview(data));
+        upcoming_count += 1;
+      }
     }
   }
   document.getElementById(
@@ -357,6 +367,19 @@ function render_video_list() {
   document.getElementById(
     "upcoming_header"
   ).innerHTML = `Upcoming Streams (${upcoming_count})`;
+  if (starting_count != 0) {
+    const header = document.getElementById(
+      "starting_header"
+    );
+    header.innerHTML = `Starting Streams (${starting_count})`;
+    header.hidden = false;
+    starting_video_frame.hidden = false;
+  } else {
+    document.getElementById(
+      "starting_header"
+    ).hidden=true;
+    starting_video_frame.hidden = true;
+  }
 }
 
 function build_video_preview(data) {
@@ -419,9 +442,7 @@ function build_video_preview(data) {
   link.appendChild(lower_part_div);
   frame.appendChild(link);
   frame.classList.add("video_frame");
-  if (start_time < (new Date())) {
-    frame.classList.add("video_started")
-  }
+
   return frame;
 }
 
