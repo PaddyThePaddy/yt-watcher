@@ -44,10 +44,20 @@
         <button onclick="update_video_list()">Update video list</button>
         <br />
         <div>
-          <button onclick="copy_calendar_url()">Copy calendar url</button>
+          <input type="text" id="sync_key_text" onkeyup="check_key_input();">
+          <button id="new_sync_key_btn" onclick="new_sync_key();">New</button>
+          <button id="pull_sync_btn" onclick="pull_sync_key();">Pull</button>
+          <button id="push_sync_btn" onclick="push_sync_key();">Push</button>
+        </div>
+        <div>
           <input type="checkbox" id="alarm_cb" value="alarm" />
           <label for="alarm">Alarm</label>
+          <br>
+          <button onclick="copy_calendar_url()">Copy calendar url</button>
           <span class="popup" id="copy_popup">Copied!</span>
+          <br>
+          <button id="copy_synced_calendar_url_btn" onclick="copy_synced_calendar_url();">Copy synced calendar url</button>
+          <span class="popup" id="synced_copy_popup">Copied!</span>
         </div>
         <hr />
         <span id="channel_count"></span>

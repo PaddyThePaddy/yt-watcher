@@ -24,6 +24,7 @@ setInterval(() => {
 function load() {
   update_video_list();
   update_channel_id_list();
+  init_sync_key();
 }
 
 function get_yt_id_list() {
@@ -54,6 +55,21 @@ function get_tw_id_list() {
 
 function set_tw_id_list(id_list) {
   document.cookie = "tw_id_list=" + id_list;
+}
+
+function get_sync_key() {
+  const cookies = document.cookie.split(";");
+  for (c of cookies) {
+    const pair = c.split("=", 2);
+    if (pair[0].trim() == "sync_key") {
+      return pair[1].trim();
+    }
+  }
+  return "";
+}
+
+function set_sync_key(key) {
+  document.cookie = "sync_key=" + key;
 }
 
 function load_yt_channel(value) {
@@ -483,7 +499,7 @@ function copy_calendar_url() {
     url += "tw-ch=" + tw_id_list.join(",");
   }
   if (document.getElementById("alarm_cb").checked) {
-    url += "&alram=true";
+    url += "&alarm=true";
   }
   navigator.clipboard.writeText(url).then(() => {
     console.log("copy success");
@@ -607,4 +623,120 @@ function del_channel(target) {
   }
   update_channel_id_list();
   update_video_list();
+}
+
+function toggle_sync_key_btns(key_exist) {
+  if (key_exist) {
+    document.getElementById("new_sync_key_btn").style.visibility = "hidden";
+    document.getElementById("pull_sync_btn").style.visibility = "visible";
+    document.getElementById("push_sync_btn").style.visibility = "visible";
+    document.getElementById("copy_synced_calendar_url_btn").style.visibility =
+      "visible";
+  } else {
+    document.getElementById("new_sync_key_btn").style.visibility = "visible";
+    document.getElementById("pull_sync_btn").style.visibility = "hidden";
+    document.getElementById("push_sync_btn").style.visibility = "hidden";
+    document.getElementById("copy_synced_calendar_url_btn").style.visibility =
+      "hidden";
+  }
+}
+
+function init_sync_key() {
+  const key = get_sync_key();
+  if (get_sync_key().length != 0) {
+    document.getElementById("sync_key_text").value = key;
+    toggle_sync_key_btns(true);
+  } else {
+    toggle_sync_key_btns(false);
+  }
+}
+
+function new_sync_key() {
+  fetch(site_url + "sync/new")
+    .then((resp) => {
+      return resp.json();
+    })
+    .then((resp) => {
+      console.log(resp);
+      set_sync_key(resp.key);
+      init_sync_key();
+    });
+}
+
+function push_sync_key() {
+  const yt_id_list = get_yt_id_list()
+    .split(",")
+    .filter((s) => s.length != 0);
+  const tw_id_list = get_tw_id_list()
+    .split(",")
+    .filter((s) => s.length != 0);
+
+  let url = site_url + "sync/push?key=" + get_sync_key();
+  url += "&yt-ch=" + yt_id_list.join(",");
+  url += "&tw-ch=" + tw_id_list.join(",");
+  console.log(url);
+  fetch(url).then((resp) => {
+    console.log(resp.json());
+  });
+}
+
+function pull_sync_key() {
+  fetch(site_url + "sync/pull?key=" + get_sync_key())
+    .then((resp) => {
+      return resp.json();
+    })
+    .then((resp) => {
+      if (resp.yt_ch != null) {
+        let current = get_yt_id_list()
+          .split(",")
+          .filter((s) => s.length != 0);
+        for (ch of resp.yt_ch) {
+          if (!current.includes(ch)) {
+            current.push(ch);
+          }
+        }
+        set_yt_id_list(current.join(","));
+      }
+      if (resp.tw_ch != null) {
+        let current = get_tw_id_list()
+          .split(",")
+          .filter((s) => s.length != 0);
+        for (ch of resp.tw_ch) {
+          if (!current.includes(ch)) {
+            current.push(ch);
+          }
+        }
+        set_tw_id_list(current.join(","));
+      }
+      update_video_list();
+      update_channel_id_list();
+    });
+}
+
+let synced_copy_timeout_handle = null;
+function copy_synced_calendar_url() {
+  let url = site_url + "cal?key=" + get_sync_key();
+  if (document.getElementById("alarm_cb").checked) {
+    url += "&alarm=true";
+  }
+  navigator.clipboard.writeText(url).then(() => {
+    console.log("copy success");
+    document.getElementById("synced_copy_popup").classList.add("show");
+    if (synced_copy_timeout_handle) {
+      clearTimeout(synced_copy_timeout_handle);
+    }
+    synced_copy_timeout_handle = setTimeout(() => {
+      document.getElementById("synced_copy_popup").classList.remove("show");
+      synced_copy_timeout_handle = null;
+    }, 2000);
+  });
+}
+
+function verify_sync_key(key) {
+  console.log(key);
+  return /[\w\d]{8}-[\w\d]{4}-[\w\d]{4}-[\w\d]{4}-[\w\d]{12}/.test(key)
+}
+
+function check_key_input() {
+  toggle_sync_key_btns(verify_sync_key(document.getElementById("sync_key_text").value))
 }

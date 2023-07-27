@@ -4,3 +4,4 @@ config.toml
 channels.json
 videos.txt
 channel_cache
+sync_keys.json

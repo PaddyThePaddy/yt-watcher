@@ -7,6 +7,7 @@ use std::{
 };
 
 use crate::{
+    sync,
     tw_api::{structs::*, *},
     yt_api::{structs::*, *},
     Compression, TwAppKey,
@@ -237,43 +238,59 @@ pub async fn server_start(config: &crate::Config) {
                     for id in query_str.split(',') {
                         yt_channel_ids.push(try_youtube_id(id).await);
                     }
-                    let new_channel_ids = {
-                        server_data_clone2
-                            .read()
-                            .await
-                            .filter_new_yt_channel_id(&yt_channel_ids)
-                    };
-                    if !new_channel_ids.is_empty() {
-                        if let Err(e) = server_data_clone2
-                            .write()
-                            .await
-                            .track_new_yt_channels(&new_channel_ids)
-                            .await
-                        {
-                            log::error!("Track new youtube channel failed: {:?}", e);
-                        };
-                    }
                 }
                 if let Some(query_str) = query.get("tw-ch") {
                     tw_channel_logins.extend(query_str.split(',').map(|s| s.to_string()));
-                    let new_tw_channel_logins = {
-                        server_data_clone2
-                            .read()
-                            .await
-                            .filter_new_tw_channel_login(&tw_channel_logins)
-                    };
-                    if !new_tw_channel_logins.is_empty() {
-                        server_data_clone2
-                            .write()
-                            .await
-                            .track_new_tw_channels(&new_tw_channel_logins)
-                            .await;
+                }
+                if let Some(sync_key) = query.get("key") {
+                    let key = uuid::Uuid::from_str(sync_key).unwrap_or_default();
+                    if let Some(ch) = sync::get_yt_channel(&key).await {
+                        for id in ch.iter() {
+                            yt_channel_ids.push(try_youtube_id(id).await);
+                        }
                     }
+
+                    if let Some(ch) = sync::get_tw_channel(&key).await {
+                        tw_channel_logins.extend(ch.iter().cloned());
+                    }
+                }
+                let new_yt_channel_ids = {
+                    server_data_clone2
+                        .read()
+                        .await
+                        .filter_new_yt_channel_id(&yt_channel_ids)
+                };
+                if !new_yt_channel_ids.is_empty() {
+                    if let Err(e) = server_data_clone2
+                        .write()
+                        .await
+                        .track_new_yt_channels(&new_yt_channel_ids)
+                        .await
+                    {
+                        log::error!("Track new youtube channel failed: {:?}", e);
+                    };
+                }
+
+                let new_tw_channel_logins = {
+                    server_data_clone2
+                        .read()
+                        .await
+                        .filter_new_tw_channel_login(&tw_channel_logins)
+                };
+                if !new_tw_channel_logins.is_empty() {
+                    server_data_clone2
+                        .write()
+                        .await
+                        .track_new_tw_channels(&new_tw_channel_logins)
+                        .await;
                 }
                 let events = {
                     let mut server_data = server_data_clone2.write().await;
                     for id in yt_channel_ids.iter() {
                         server_data.touch_yt_channel(id);
+                    }
+                    for login in tw_channel_logins.iter() {
+                        server_data.touch_tw_channel(login);
                     }
                     server_data.events.clone()
                 };
@@ -294,54 +311,70 @@ pub async fn server_start(config: &crate::Config) {
             let server_data_clone2 = server_data_clone.clone();
             async move {
                 let mut cal = icalendar::Calendar::new();
-                let alarm_enabled = match query.get("alram") {
+                let alarm_enabled = match query.get("alarm") {
                     Some(v) => v.to_lowercase() == "true" || v.to_lowercase() == "yes",
                     None => false,
                 };
                 cal.name("Stream Calendar");
                 let mut yt_channel_ids: Vec<String> = vec![];
+                let mut tw_channel_logins = vec![];
                 if let Some(query_str) = query.get("yt-ch") {
                     for id in query_str.split(',') {
                         yt_channel_ids.push(try_youtube_id(id).await);
                     }
-                    let new_channel_ids = {
-                        server_data_clone2
-                            .read()
-                            .await
-                            .filter_new_yt_channel_id(&yt_channel_ids)
-                    };
-                    if !new_channel_ids.is_empty() {
-                        if let Err(e) = server_data_clone2
-                            .write()
-                            .await
-                            .track_new_yt_channels(&new_channel_ids)
-                            .await
-                        {
-                            log::error!("Track new youtube channel failed: {:?}", e);
-                        };
-                    }
                 }
-                let mut tw_channel_logins = vec![];
                 if let Some(query_str) = query.get("tw-ch") {
                     tw_channel_logins.extend(query_str.split(',').map(|s| s.to_string()));
-                    let new_tw_channel_logins = {
-                        server_data_clone2
-                            .read()
-                            .await
-                            .filter_new_tw_channel_login(&tw_channel_logins)
-                    };
-                    if !new_tw_channel_logins.is_empty() {
-                        server_data_clone2
-                            .write()
-                            .await
-                            .track_new_tw_channels(&new_tw_channel_logins)
-                            .await;
+                }
+                if let Some(sync_key) = query.get("key") {
+                    let key = uuid::Uuid::from_str(sync_key).unwrap_or_default();
+                    if let Some(ch) = sync::get_yt_channel(&key).await {
+                        for id in ch.iter() {
+                            yt_channel_ids.push(try_youtube_id(id).await);
+                        }
                     }
+
+                    if let Some(ch) = sync::get_tw_channel(&key).await {
+                        tw_channel_logins.extend(ch.iter().cloned());
+                    }
+                }
+                let new_yt_channel_ids = {
+                    server_data_clone2
+                        .read()
+                        .await
+                        .filter_new_yt_channel_id(&yt_channel_ids)
+                };
+                if !new_yt_channel_ids.is_empty() {
+                    if let Err(e) = server_data_clone2
+                        .write()
+                        .await
+                        .track_new_yt_channels(&new_yt_channel_ids)
+                        .await
+                    {
+                        log::error!("Track new youtube channel failed: {:?}", e);
+                    };
+                }
+
+                let new_tw_channel_logins = {
+                    server_data_clone2
+                        .read()
+                        .await
+                        .filter_new_tw_channel_login(&tw_channel_logins)
+                };
+                if !new_tw_channel_logins.is_empty() {
+                    server_data_clone2
+                        .write()
+                        .await
+                        .track_new_tw_channels(&new_tw_channel_logins)
+                        .await;
                 }
                 let events = {
                     let mut server_data = server_data_clone2.write().await;
                     for id in yt_channel_ids.iter() {
                         server_data.touch_yt_channel(id);
+                    }
+                    for login in tw_channel_logins.iter() {
+                        server_data.touch_tw_channel(login);
                     }
                     server_data.events.clone()
                 };
@@ -357,6 +390,77 @@ pub async fn server_start(config: &crate::Config) {
                 cal.done().to_string()
             }
         });
+
+    let sync_key_endpoint = warp::get().and(warp::path("sync")).and(
+        warp::path("new")
+            .then(|| async {
+                serde_json::to_string(&HashMap::from([("key", sync::new_key().await)]))
+                    .unwrap_or_default()
+            })
+            .or(warp::path("push")
+                .and(warp::query::<HashMap<String, String>>())
+                .then(|query: HashMap<String, String>| async move {
+                    if let Some(key) = query.get("key") {
+                        let key = uuid::Uuid::from_str(key).unwrap_or_default();
+                        if let Some(yt_ch) = query.get("yt-ch") {
+                            if sync::set_yt_channels(
+                                &key,
+                                yt_ch.split(",").filter(|s| !s.is_empty()),
+                            )
+                            .await
+                            .is_err()
+                            {
+                                return serde_json::to_string(&HashMap::from([(
+                                    "result".to_string(),
+                                    "failed",
+                                )]))
+                                .unwrap_or_default();
+                            }
+                        }
+                        if let Some(tw_ch) = query.get("tw-ch") {
+                            if sync::set_tw_channels(
+                                &key,
+                                tw_ch.split(",").filter(|s| !s.is_empty()),
+                            )
+                            .await
+                            .is_err()
+                            {
+                                return serde_json::to_string(&HashMap::from([(
+                                    "result".to_string(),
+                                    "failed",
+                                )]))
+                                .unwrap_or_default();
+                            }
+                        }
+                        serde_json::to_string(&HashMap::from([("result".to_string(), "ok")]))
+                            .unwrap_or_default()
+                    } else {
+                        serde_json::to_string(&HashMap::from([(
+                            "result",
+                            "error: No key specified",
+                        )]))
+                        .unwrap_or_default()
+                    }
+                }))
+            .or(warp::path("pull")
+                .and(warp::query::<HashMap<String, String>>())
+                .then(|query: HashMap<String, String>| async move {
+                    if let Some(key) = query.get("key") {
+                        let mut response: HashMap<&str, HashSet<String>> = HashMap::new();
+                        let key = uuid::Uuid::from_str(key).unwrap_or_default();
+                        if let Some(yt_ch) = sync::get_yt_channel(&key).await {
+                            response.insert("yt_ch", yt_ch);
+                        }
+                        if let Some(tw_ch) = sync::get_tw_channel(&key).await {
+                            response.insert("tw_ch", tw_ch);
+                        }
+                        serde_json::to_string(&response).unwrap_or_default()
+                    } else {
+                        serde_json::to_string(&HashMap::from([("error", "No key specified")]))
+                            .unwrap_or_default()
+                    }
+                })),
+    );
 
     let server_data_clone = server_data.clone();
     let video_refresh_interval = config.video_refresh_interval;
@@ -381,6 +485,7 @@ pub async fn server_start(config: &crate::Config) {
             tokio::time::sleep(Duration::from_secs(1)).await;
         }
     });
+
     let server_data_clone = server_data.clone();
     let channel_refresh_interval = config.channel_refresh_interval;
     let _handle = tokio::spawn(async move {
@@ -399,7 +504,8 @@ pub async fn server_start(config: &crate::Config) {
                         .or(get_yt_channel_info)
                         .or(get_data_endpoint)
                         .or(get_calendar_endpoint)
-                        .or(get_tw_channel_info),
+                        .or(get_tw_channel_info)
+                        .or(sync_key_endpoint),
                 );
                 futures::join!(
                     warp::serve(routes.clone()).run(http_socket),
@@ -416,7 +522,8 @@ pub async fn server_start(config: &crate::Config) {
                             .or(get_yt_channel_info)
                             .or(get_data_endpoint)
                             .or(get_calendar_endpoint)
-                            .or(get_tw_channel_info),
+                            .or(get_tw_channel_info)
+                            .or(sync_key_endpoint),
                     ),
                 )
                 .run(http_socket)
@@ -432,6 +539,7 @@ pub async fn server_start(config: &crate::Config) {
                         .or(get_yt_channel_info.with(compression))
                         .or(get_data_endpoint.with(compression))
                         .or(get_tw_channel_info.with(compression))
+                        .or(sync_key_endpoint.with(compression))
                         .or(get_calendar_endpoint),
                 );
                 futures::join!(
@@ -450,6 +558,7 @@ pub async fn server_start(config: &crate::Config) {
                             .or(get_yt_channel_info.with(compression))
                             .or(get_data_endpoint.with(compression))
                             .or(get_tw_channel_info.with(compression))
+                            .or(sync_key_endpoint.with(compression))
                             .or(get_calendar_endpoint),
                     ),
                 )
@@ -466,6 +575,7 @@ pub async fn server_start(config: &crate::Config) {
                         .or(get_yt_channel_info.with(compression))
                         .or(get_data_endpoint.with(compression))
                         .or(get_tw_channel_info.with(compression))
+                        .or(sync_key_endpoint.with(compression))
                         .or(get_calendar_endpoint),
                 );
                 futures::join!(
@@ -484,6 +594,7 @@ pub async fn server_start(config: &crate::Config) {
                             .or(get_yt_channel_info.with(compression))
                             .or(get_data_endpoint.with(compression))
                             .or(get_tw_channel_info.with(compression))
+                            .or(sync_key_endpoint.with(compression))
                             .or(get_calendar_endpoint),
                     ),
                 )
@@ -500,6 +611,7 @@ pub async fn server_start(config: &crate::Config) {
                         .or(get_yt_channel_info.with(compression))
                         .or(get_data_endpoint.with(compression))
                         .or(get_tw_channel_info.with(compression))
+                        .or(sync_key_endpoint.with(compression))
                         .or(get_calendar_endpoint),
                 );
                 futures::join!(
@@ -518,6 +630,7 @@ pub async fn server_start(config: &crate::Config) {
                             .or(get_yt_channel_info.with(compression))
                             .or(get_data_endpoint.with(compression))
                             .or(get_tw_channel_info.with(compression))
+                            .or(sync_key_endpoint.with(compression))
                             .or(get_calendar_endpoint),
                     ),
                 )
