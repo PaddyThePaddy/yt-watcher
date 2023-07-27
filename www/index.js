@@ -627,17 +627,15 @@ function del_channel(target) {
 
 function toggle_sync_key_btns(key_exist) {
   if (key_exist) {
-    document.getElementById("new_sync_key_btn").style.visibility = "hidden";
-    document.getElementById("pull_sync_btn").style.visibility = "visible";
-    document.getElementById("push_sync_btn").style.visibility = "visible";
-    document.getElementById("copy_synced_calendar_url_btn").style.visibility =
-      "visible";
+    document.getElementById("new_sync_key_btn").hidden = true;
+    document.getElementById("pull_sync_btn").hidden = false;
+    document.getElementById("push_sync_btn").hidden = false;
+    document.getElementById("copy_synced_calendar_url_btn").hidden = false;
   } else {
-    document.getElementById("new_sync_key_btn").style.visibility = "visible";
-    document.getElementById("pull_sync_btn").style.visibility = "hidden";
-    document.getElementById("push_sync_btn").style.visibility = "hidden";
-    document.getElementById("copy_synced_calendar_url_btn").style.visibility =
-      "hidden";
+    document.getElementById("new_sync_key_btn").hidden = false;
+    document.getElementById("pull_sync_btn").hidden = true;
+    document.getElementById("push_sync_btn").hidden = true;
+    document.getElementById("copy_synced_calendar_url_btn").hidden = true;
   }
 }
 
@@ -664,6 +662,10 @@ function new_sync_key() {
 }
 
 function push_sync_key() {
+  if(!verify_sync_key(get_sync_key())) {
+    console.log("invalid sync key");
+    return;
+  }
   const yt_id_list = get_yt_id_list()
     .split(",")
     .filter((s) => s.length != 0);
@@ -681,6 +683,10 @@ function push_sync_key() {
 }
 
 function pull_sync_key() {
+  if(!verify_sync_key(get_sync_key())) {
+    console.log("invalid sync key");
+    return;
+  }
   fetch(site_url + "sync/pull?key=" + get_sync_key())
     .then((resp) => {
       return resp.json();

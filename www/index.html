@@ -44,7 +44,8 @@
         <button onclick="update_video_list()">Update video list</button>
         <br />
         <div>
-          <input type="text" id="sync_key_text" onkeyup="check_key_input();">
+          <input type="text" id="sync_key_text" onkeyup="check_key_input();"><br>
+          <button id="set_sync_key_btn" onclick='set_sync_key(document.getElementById("sync_key_text").value)'>Set</button>
           <button id="new_sync_key_btn" onclick="new_sync_key();">New</button>
           <button id="pull_sync_btn" onclick="pull_sync_key();">Pull</button>
           <button id="push_sync_btn" onclick="push_sync_key();">Push</button>
