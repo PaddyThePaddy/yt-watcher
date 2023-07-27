@@ -378,6 +378,7 @@ pub async fn server_start(config: &crate::Config) {
             log::info!("Updating upcoming event");
             let mut data = server_data_clone.write().await;
             data.check_upcoming_event().await;
+            tokio::time::sleep(Duration::from_secs(1)).await;
         }
     });
     let server_data_clone = server_data.clone();
