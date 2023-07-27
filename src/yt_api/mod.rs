@@ -141,6 +141,7 @@ pub async fn try_youtube_id(query: &str) -> String {
         "https://www.youtube.com/@{}",
         query
             .trim_start_matches("https://www.youtube.com/@")
+            .trim_start_matches("https://youtube.com/@")
             .trim_start_matches('@')
     ))
     .await
@@ -150,6 +151,7 @@ pub async fn try_youtube_id(query: &str) -> String {
             log::error!("Get chanel id by url failed: {:?}", e);
             query
                 .trim_start_matches("https://www.youtube.com/channel/")
+                .trim_start_matches("https://youtube.com/channel/")
                 .to_string()
         }
     }

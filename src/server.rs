@@ -80,6 +80,8 @@ pub async fn server_start(config: &crate::Config) {
                         if !validate_custom_url(
                             url.trim_start_matches("https://www.youtube.com/@")
                                 .trim_start_matches("https://www.youtube.com/channel/")
+                                .trim_start_matches("https://youtube.com/@")
+                                .trim_start_matches("https://youtube.com/channel/")
                                 .trim_start_matches('@')
                                 .trim_end_matches("/featured"),
                         ) {
