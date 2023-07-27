@@ -1082,7 +1082,7 @@ impl ServerData {
         match &mut self.tw_client {
             None => log::error!("Twitch client is not initialized"),
             Some(client) => match client.get_stream_info(&channel_ids).await {
-                Err(e) => log::error!("Get stream info failed: {e}"),
+                Err(e) => log::error!("Get stream info of channel {channel_ids:?} failed: {e}"),
                 Ok(streams) => event_ref.extend(streams.into_iter().map(|s| {
                     let profile_url: String = self
                         .tw_channels
@@ -1235,7 +1235,9 @@ impl ServerData {
                             )
                                 .into()
                         })),
-                        Err(e) => log::error!("Get stream info failed: {e}"),
+                        Err(e) => log::error!("Get stream info of channel {:?} failed: {e}", channels
+                                .iter()
+                                .map(|c| c.login.clone()).collect::<Vec<String>>()),
                     }
                 }
                 Err(e) => log::error!("Get user info failed: {e}"),

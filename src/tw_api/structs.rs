@@ -65,7 +65,7 @@ pub struct StreamInformation {
     #[serde(rename = "type")]
     pub stream_type: String,
     pub title: String,
-    pub tags: Vec<String>,
+    pub tags: Option<Vec<String>>,
     pub viewer_count: usize,
     pub started_at: chrono::DateTime<chrono::Utc>,
     pub language: String,
