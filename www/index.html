@@ -8,7 +8,7 @@
     <script src="index.js"></script>
   </head>
 
-  <body onload="load();">
+  <body onload="load();" onmousemove="save_mouse_pos(event);">
     <div class="main_frame">
       <div id="menu_content">
         <button id="menu_close_btn" onclick="close_menu()">
@@ -55,10 +55,8 @@
           <label for="alarm">Alarm</label>
           <br>
           <button onclick="copy_calendar_url()">Copy calendar url</button>
-          <span class="popup" id="copy_popup">Copied!</span>
           <br>
           <button id="copy_synced_calendar_url_btn" onclick="copy_synced_calendar_url();">Copy synced calendar url</button>
-          <span class="popup" id="synced_copy_popup">Copied!</span>
         </div>
         <hr />
         <span id="channel_count"></span>
@@ -110,5 +108,6 @@
       <div id="upcoming_video_frame" class="video_container"></div>
     </div>
     <div id="menu_remaining_area" onclick="close_menu()"></div>
+    <span class="popup" id="popup">Copied!</span>
   </body>
 </html>

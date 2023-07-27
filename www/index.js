@@ -6,6 +6,7 @@ let site_url = document.URL;
 let yt_channel_data = null;
 let tw_channel_data = null;
 let video_data = null;
+let mouse_pos = null;
 if (site_url.endsWith("index.html")) {
   site_url = site_url.substring(0, site_url.length - 10);
 }
@@ -25,6 +26,28 @@ function load() {
   update_video_list();
   update_channel_id_list();
   init_sync_key();
+}
+
+function save_mouse_pos(event) {
+  mouse_pos = {
+    x: event.clientX,
+    y: event.clientY
+  }
+}
+
+function show_popup(msg) {
+  const popup = document.getElementById("popup");
+  popup.style.top = mouse_pos.y + "px"
+  popup.style.left = mouse_pos.x + "px"
+  popup.innerHTML = msg;
+  popup.classList.add("show");
+  if (copy_timeout_handle) {
+    clearTimeout(copy_timeout_handle);
+  }
+  copy_timeout_handle = setTimeout(() => {
+    popup.classList.remove("show");
+    copy_timeout_handle = null;
+  }, 2000);
 }
 
 function get_yt_id_list() {
@@ -70,6 +93,7 @@ function get_sync_key() {
 
 function set_sync_key(key) {
   document.cookie = "sync_key=" + key;
+  show_popup("Sync key set to " + key);
 }
 
 function load_yt_channel(value) {
@@ -80,6 +104,8 @@ function load_yt_channel(value) {
     .then((resp) => {
       if (resp.error == null) {
         yt_channel_data = resp.data;
+      } else {
+        show_popup("Load yt channel failed: " + resp.error);
       }
     });
 }
@@ -92,6 +118,8 @@ function load_tw_channel(value) {
     .then((resp) => {
       if (resp.error == null) {
         tw_channel_data = resp.data;
+      } else {
+        show_popup("Load tw channel failed: " + resp.error);
       }
     });
 }
@@ -186,11 +214,13 @@ function import_channel_list() {
   let list = document.getElementById("channel_name").value;
   let promises = [];
   const yt_list = new RegExp(".+(?:\\?|&)yt-ch=([^&]+)").exec(list);
+  let count = 0;
   if (yt_list != null) {
     for (c of yt_list[1].split(",").filter((s) => s.length != 0)) {
       promises.push(
         load_yt_channel(c).then(() => {
           follow_yt_channel();
+          count += 1;
         })
       );
     }
@@ -201,12 +231,14 @@ function import_channel_list() {
       promises.push(
         load_tw_channel(c).then(() => {
           follow_tw_channel();
+          count += 1;
         })
       );
     }
   }
   Promise.all(promises).then(() => {
     update_video_list();
+    show_popup("Done. Found " + count + " channels");
   });
 }
 
@@ -500,14 +532,7 @@ function copy_calendar_url() {
   }
   navigator.clipboard.writeText(url).then(() => {
     console.log("copy success");
-    document.getElementById("copy_popup").classList.add("show");
-    if (copy_timeout_handle) {
-      clearTimeout(copy_timeout_handle);
-    }
-    copy_timeout_handle = setTimeout(() => {
-      document.getElementById("copy_popup").classList.remove("show");
-      copy_timeout_handle = null;
-    }, 2000);
+    show_popup("Copied")
   });
 }
 function open_menu() {
@@ -674,8 +699,13 @@ function push_sync_key() {
   url += "&yt-ch=" + yt_id_list.join(",");
   url += "&tw-ch=" + tw_id_list.join(",");
   console.log(url);
-  fetch(url).then((resp) => {
-    console.log(resp.json());
+  fetch(url).then(resp => resp.json()).then((resp) => {
+    console.log(resp);
+    if (resp.result) {
+      show_popup(resp.result)
+    } else {
+      show_popup("Failed");
+    }
   });
 }
 
@@ -713,6 +743,7 @@ function pull_sync_key() {
       }
       update_video_list();
       update_channel_id_list();
+      show_popup("Pulled");
     });
 }
 
@@ -724,14 +755,7 @@ function copy_synced_calendar_url() {
   }
   navigator.clipboard.writeText(url).then(() => {
     console.log("copy success");
-    document.getElementById("synced_copy_popup").classList.add("show");
-    if (synced_copy_timeout_handle) {
-      clearTimeout(synced_copy_timeout_handle);
-    }
-    synced_copy_timeout_handle = setTimeout(() => {
-      document.getElementById("synced_copy_popup").classList.remove("show");
-      synced_copy_timeout_handle = null;
-    }, 2000);
+    show_popup("Copied");
   });
 }
 
