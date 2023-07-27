@@ -258,9 +258,6 @@ function follow_tw_channel() {
   let exist = false;
   let id_list = get_tw_id_list();
   for (id of id_list.split(",").filter((s) => s.length != 0)) {
-    if (!id.startsWith("@")) {
-      id = "@" + id;
-    }
     if (id == tw_channel_data.custom_url) {
       exist = true;
       break;
