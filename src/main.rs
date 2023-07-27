@@ -3,7 +3,9 @@ mod sync;
 mod tw_api;
 mod yt_api;
 
+use futures::Future;
 use once_cell::sync::Lazy;
+use reqwest::IntoUrl;
 use serde::Deserialize;
 
 const CONFIG_PATH: &str = "config.toml";
@@ -97,4 +99,10 @@ async fn main() {
 
     log::info!("starting");
     server::server_start(&config).await;
+}
+
+fn make_http_get(
+    url: impl IntoUrl,
+) -> impl Future<Output = Result<reqwest::Response, reqwest::Error>> {
+    unsafe { REQWEST_CLIENT.execute(REQWEST_CLIENT.get(url).build().unwrap()) }
 }

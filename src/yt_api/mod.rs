@@ -2,7 +2,7 @@
 pub mod structs;
 use std::{borrow::BorrowMut, num::NonZeroUsize};
 
-use crate::REQWEST_CLIENT;
+use crate::make_http_get;
 use lru::LruCache;
 use once_cell::sync::Lazy;
 use regex::Regex;
@@ -109,10 +109,9 @@ pub async fn get_channel_id_by_url(url: &str) -> Result<String, YtApiError> {
         }
     }
 
-    let channel_page_src = unsafe {
+    let channel_page_src = {
         log::info!("Channel id cache miss. Making http request: {}", url);
-        REQWEST_CLIENT
-            .execute(REQWEST_CLIENT.get(&url).build().unwrap())
+        make_http_get(&url)
             .await
             .map_err(|e| YtApiError::RequestFailed(e.status()))?
             .error_for_status()
@@ -310,7 +309,7 @@ pub async fn get_channels(
         url += &token;
     }
     log::debug!("Request url: {}", url);
-    reqwest::get(url)
+    make_http_get(&url)
         .await
         .map_err(|e| YtApiError::RequestFailed(e.status()))?
         .error_for_status()
@@ -412,7 +411,7 @@ pub async fn get_playlist_items(
     }
 
     log::debug!("Request url: {}", url);
-    reqwest::get(url)
+    make_http_get(&url)
         .await
         .map_err(|e| YtApiError::RequestFailed(e.status()))?
         .error_for_status()
@@ -599,7 +598,7 @@ pub async fn get_video(
     }
 
     log::debug!("Request url: {}", url);
-    reqwest::get(url)
+    make_http_get(&url)
         .await
         .map_err(|e| YtApiError::RequestFailed(e.status()))?
         .error_for_status()
@@ -618,7 +617,7 @@ static VIDEO_ID_PATTERN: Lazy<Regex> =
     Lazy::new(|| regex::Regex::new("<yt:videoId>(.+?)</yt:videoId>").unwrap());
 
 pub async fn get_video_list_through_rss(channel_id: &str) -> Result<Vec<String>, YtApiError> {
-    let feed_body = match reqwest::get(format!(
+    let feed_body = match make_http_get(&format!(
         "https://www.youtube.com/feeds/videos.xml?channel_id={}",
         channel_id
     ))
@@ -635,7 +634,7 @@ pub async fn get_video_list_through_rss(channel_id: &str) -> Result<Vec<String>,
                 if status == 429 {
                     log::error!("Got http error 429: too many requests. Try again after 1 min...");
                     tokio::time::sleep(Duration::from_secs(60)).await;
-                    reqwest::get(format!(
+                    make_http_get(format!(
                         "https://www.youtube.com/feeds/videos.xml?channel_id={}",
                         channel_id
                     ))
@@ -719,7 +718,7 @@ mod test {
             .unwrap();
 
         runtime.block_on(async {
-            let channel_page_src = reqwest::get(CHANNEL_ID_TEST_URL)
+            let channel_page_src = make_http_get(CHANNEL_ID_TEST_URL)
                 .await
                 .expect("Get channel page source failed")
                 .error_for_status()
