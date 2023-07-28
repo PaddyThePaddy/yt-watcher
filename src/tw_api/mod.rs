@@ -232,3 +232,49 @@ pub fn process_thumbnail_url(url: &str, width: usize, height: usize) -> String {
     url.replace("{width}", &format!("{}", width))
         .replace("{height}", &format!("{}", height))
 }
+
+#[cfg(test)]
+mod test {
+    use super::*;
+    use crate::test::*;
+
+    const TEST_ID: &str = "126595970";
+
+    #[test]
+    fn test_get_tw_user_info() {
+        TOKIO_RUNTIME.block_on(async {
+            let mut client = TwApiClient::new(
+                &CONFIG.twitch_key.as_ref().unwrap().client_id,
+                &CONFIG.twitch_key.as_ref().unwrap().client_secret,
+            )
+            .await
+            .unwrap();
+            let users = client
+                .get_user_info(&[UserIdentity::Login("restiafps".to_string())])
+                .await
+                .unwrap();
+            assert!(!users.is_empty());
+
+            assert!(!client
+                .get_user_info(&[UserIdentity::Id(users.first().as_ref().unwrap().id.clone())])
+                .await
+                .unwrap()
+                .is_empty());
+        });
+    }
+    fn test_get_tw_channel_info() {
+        TOKIO_RUNTIME.block_on(async {
+            let mut client = TwApiClient::new(
+                &CONFIG.twitch_key.as_ref().unwrap().client_id,
+                &CONFIG.twitch_key.as_ref().unwrap().client_secret,
+            )
+            .await
+            .unwrap();
+            let channels = client
+                .get_channel_info(&[TEST_ID.to_string()])
+                .await
+                .unwrap();
+            assert!(!channels.is_empty());
+        });
+    }
+}

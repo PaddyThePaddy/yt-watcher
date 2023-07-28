@@ -383,8 +383,8 @@ pub mod Video {
 
     #[derive(Serialize, Deserialize, Debug)]
     pub struct RegionRestriction {
-        pub allowed: Vec<String>,
-        pub blocked: Vec<String>,
+        pub allowed: Option<Vec<String>>,
+        pub blocked: Option<Vec<String>>,
     }
 
     #[derive(Serialize, Deserialize, Debug)]
@@ -395,7 +395,7 @@ pub mod Video {
         pub caption: String,
         pub licensedContent: bool,
         pub regionRestriction: Option<RegionRestriction>,
-        pub contentRation: ContentRating,
+        pub contentRating: ContentRating,
         pub projection: String,
         pub hasCustomThumbnail: Option<bool>,
     }

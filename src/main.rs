@@ -106,3 +106,20 @@ fn make_http_get(
 ) -> impl Future<Output = Result<reqwest::Response, reqwest::Error>> {
     unsafe { REQWEST_CLIENT.execute(REQWEST_CLIENT.get(url).build().unwrap()) }
 }
+
+#[cfg(test)]
+pub mod test {
+    use once_cell::sync::Lazy;
+    use tokio::runtime::Runtime;
+
+    pub static TOKIO_RUNTIME: Lazy<Runtime> = Lazy::new(|| {
+        tokio::runtime::Builder::new_current_thread()
+            .enable_all()
+            .build()
+            .unwrap()
+    });
+    pub static CONFIG: Lazy<crate::Config> = Lazy::new(|| {
+        toml::from_str::<crate::Config>(&std::fs::read_to_string(crate::CONFIG_PATH).unwrap())
+            .unwrap()
+    });
+}

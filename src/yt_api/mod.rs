@@ -1,6 +1,6 @@
 #![allow(dead_code)]
 pub mod structs;
-use std::{borrow::BorrowMut, num::NonZeroUsize};
+use std::num::NonZeroUsize;
 
 use crate::make_http_get;
 use lru::LruCache;
@@ -9,7 +9,7 @@ use regex::Regex;
 use reqwest::{self, StatusCode};
 use std::time::Duration;
 use structs::*;
-use tokio::io::AsyncWriteExt;
+use tokio::{io::AsyncWriteExt, sync::Mutex};
 
 #[derive(Debug, PartialEq, Eq)]
 pub enum YtApiError {
@@ -19,7 +19,7 @@ pub enum YtApiError {
     NotFound,
 }
 const CHANNEL_URL_SAVE: &str = "channel_cache";
-static mut CHANNEL_NAME_CACHE: Lazy<LruCache<String, String>> = Lazy::new(|| {
+static mut CHANNEL_NAME_CACHE: Lazy<Mutex<LruCache<String, String>>> = Lazy::new(|| {
     let mut cache = LruCache::new(NonZeroUsize::new(1000).unwrap());
     let line_break_pattern = regex::Regex::new(r"\n|\r\n").unwrap();
     match std::fs::read_to_string(CHANNEL_URL_SAVE) {
@@ -36,7 +36,7 @@ static mut CHANNEL_NAME_CACHE: Lazy<LruCache<String, String>> = Lazy::new(|| {
             }
         }
     }
-    cache
+    Mutex::new(cache)
 });
 static mut CACHE_SAVE_INITIALIZED: bool = false;
 static CHANNEL_ID_PATTERNS: [(Lazy<Regex>, usize); 4] = [
@@ -90,7 +90,7 @@ pub async fn get_channel_id_by_url(url: &str) -> Result<String, YtApiError> {
                         Ok(mut file) => {
                             // reverse the iterator. So the last used entry is at the bottom of the file
                             // when read the save back, it will remain as the last used entry
-                            for (key, value) in CHANNEL_NAME_CACHE.iter().rev() {
+                            for (key, value) in CHANNEL_NAME_CACHE.lock().await.iter().rev() {
                                 if let Err(e) =
                                     file.write_all(format!("{key} {value}\n").as_bytes()).await
                                 {
@@ -104,7 +104,7 @@ pub async fn get_channel_id_by_url(url: &str) -> Result<String, YtApiError> {
             CACHE_SAVE_INITIALIZED = true;
         }
 
-        if let Some(id) = CHANNEL_NAME_CACHE.borrow_mut().get(&url) {
+        if let Some(id) = CHANNEL_NAME_CACHE.lock().await.get(&url) {
             return Ok(id.clone());
         }
     }
@@ -125,7 +125,10 @@ pub async fn get_channel_id_by_url(url: &str) -> Result<String, YtApiError> {
         if let Some(cap) = pattern.captures(&channel_page_src) {
             if let Some(id) = cap.get(*grp) {
                 unsafe {
-                    CHANNEL_NAME_CACHE.put(url, id.as_str().to_string());
+                    CHANNEL_NAME_CACHE
+                        .lock()
+                        .await
+                        .put(url, id.as_str().to_string());
                 }
                 return Ok(id.as_str().to_string());
             }
@@ -661,48 +664,40 @@ pub async fn get_video_list_through_rss(channel_id: &str) -> Result<Vec<String>,
 
 #[cfg(test)]
 mod test {
+    use crate::test::*;
+
     use super::*;
     const CUSTOM_URL: &'static str = "GawrGura";
     const CHANNEL_ID_TEST_URL: &'static str = "https://www.youtube.com/@GawrGura";
     const CHANNEL_ID_TEST_ID: &'static str = "UCoSrY_IQQVpmIRZ9Xf-y93g";
     #[test]
     fn get_channel_id_test() {
-        let runtime = tokio::runtime::Builder::new_current_thread()
-            .enable_all()
-            .build()
-            .unwrap();
-
         assert_eq!(
-            runtime.block_on(get_channel_id_by_url(CHANNEL_ID_TEST_URL)),
+            TOKIO_RUNTIME.block_on(get_channel_id_by_url(CHANNEL_ID_TEST_URL)),
             Ok(CHANNEL_ID_TEST_ID.to_string())
         )
     }
 
     #[test]
     fn test_try_youtube_id() {
-        let runtime = tokio::runtime::Builder::new_current_thread()
-            .enable_all()
-            .build()
-            .unwrap();
-
         assert_eq!(
-            runtime.block_on(try_youtube_id(CHANNEL_ID_TEST_URL)),
+            TOKIO_RUNTIME.block_on(try_youtube_id(CHANNEL_ID_TEST_URL)),
             CHANNEL_ID_TEST_ID.to_string()
         );
         assert_eq!(
-            runtime.block_on(try_youtube_id(CUSTOM_URL)),
+            TOKIO_RUNTIME.block_on(try_youtube_id(CUSTOM_URL)),
             CHANNEL_ID_TEST_ID.to_string()
         );
         assert_eq!(
-            runtime.block_on(try_youtube_id(&format!("@{}", CUSTOM_URL))),
+            TOKIO_RUNTIME.block_on(try_youtube_id(&format!("@{}", CUSTOM_URL))),
             CHANNEL_ID_TEST_ID.to_string()
         );
         assert_eq!(
-            runtime.block_on(try_youtube_id(CHANNEL_ID_TEST_ID)),
+            TOKIO_RUNTIME.block_on(try_youtube_id(CHANNEL_ID_TEST_ID)),
             CHANNEL_ID_TEST_ID.to_string()
         );
         assert_eq!(
-            runtime.block_on(try_youtube_id(&format!(
+            TOKIO_RUNTIME.block_on(try_youtube_id(&format!(
                 "https://www.youtube.com/channel/{}",
                 CHANNEL_ID_TEST_ID
             ))),
@@ -712,12 +707,7 @@ mod test {
 
     #[test]
     fn test_all_channel_id_patterns() {
-        let runtime = tokio::runtime::Builder::new_current_thread()
-            .enable_all()
-            .build()
-            .unwrap();
-
-        runtime.block_on(async {
+        TOKIO_RUNTIME.block_on(async {
             let channel_page_src = make_http_get(CHANNEL_ID_TEST_URL)
                 .await
                 .expect("Get channel page source failed")
@@ -742,6 +732,58 @@ mod test {
                     CHANNEL_ID_TEST_ID
                 )
             }
+        });
+    }
+
+    #[test]
+    fn test_get_channel_info() {
+        TOKIO_RUNTIME.block_on(async {
+            let channel = get_all_channels(
+                &[&CHANNEL_ID_TEST_ID],
+                &GetChannelParts::default()
+                    .content_details()
+                    .id()
+                    .localizations()
+                    .snippet()
+                    .status()
+                    .topic_details(),
+                &CONFIG.api_key,
+            )
+            .await
+            .unwrap();
+            let upload_list = channel
+                .first()
+                .unwrap()
+                .contentDetails
+                .as_ref()
+                .unwrap()
+                .relatedPlaylists
+                .uploads
+                .clone();
+            let playlist = get_all_playlist_items(
+                &upload_list,
+                &GetPlaylistItemParts::default()
+                    .content_details()
+                    .id()
+                    .snippet()
+                    .status(),
+                &CONFIG.api_key,
+            )
+            .await
+            .unwrap();
+            assert!(!playlist.is_empty());
+            assert!(!get_all_video_items(
+                playlist
+                    .iter()
+                    .map(|r| r.contentDetails.as_ref().unwrap().videoId.clone())
+                    .collect::<Vec<String>>()
+                    .as_slice(),
+                &GetVideoParts::default().content_details().snippet(),
+                &CONFIG.api_key
+            )
+            .await
+            .unwrap()
+            .is_empty());
         });
     }
 }
