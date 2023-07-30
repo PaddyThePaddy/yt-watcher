@@ -4,6 +4,12 @@ fn main() {
     let pwd = std::env::current_dir().unwrap();
     if std::env::consts::OS == "windows" {
         assert!(std::process::Command::new("npm.cmd")
+            .arg("install")
+            .current_dir(pwd.join("www/"))
+            .status()
+            .expect("Build vue project failed.")
+            .success());
+        assert!(std::process::Command::new("npm.cmd")
             .arg("run")
             .arg("build")
             .current_dir(pwd.join("www/"))
@@ -11,6 +17,12 @@ fn main() {
             .expect("Build vue project failed.")
             .success());
     } else {
+        assert!(std::process::Command::new("npm")
+            .arg("install")
+            .current_dir(pwd.join("www/"))
+            .status()
+            .expect("Build vue project failed.")
+            .success());
         assert!(std::process::Command::new("npm")
             .arg("run")
             .arg("build")
