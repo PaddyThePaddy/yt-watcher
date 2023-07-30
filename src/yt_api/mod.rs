@@ -3,6 +3,7 @@ pub mod structs;
 use std::num::NonZeroUsize;
 
 use crate::make_http_get;
+use chrono::{Datelike, Utc};
 use lru::LruCache;
 use once_cell::sync::Lazy;
 use regex::Regex;
@@ -68,6 +69,7 @@ static CHANNEL_ID_PATTERNS: [(Lazy<Regex>, usize); 4] = [
     ),
 ];
 static CUSTOM_URL_PATTERN: Lazy<Regex> = Lazy::new(|| regex::Regex::new(r"^[\w.-]+$").unwrap());
+static mut QUOTA_COUNTER: Lazy<(u32, u32)> = Lazy::new(|| (Utc::now().day(), 0));
 
 pub fn validate_custom_url(custom_url: &str) -> bool {
     CUSTOM_URL_PATTERN.is_match(custom_url)
@@ -294,6 +296,14 @@ pub async fn get_channels(
     key: &str,
 ) -> Result<PagedResponse<Channel::Resource>, YtApiError> {
     log::info!("Getting {} channels info, 1 quota used", ids.len());
+    unsafe {
+        let day = Utc::now().day();
+        if day != QUOTA_COUNTER.0 {
+            *QUOTA_COUNTER = (day, 0);
+        }
+        QUOTA_COUNTER.1 += 1;
+        log::info!("Quota used today (in utc): {}", QUOTA_COUNTER.1);
+    }
     log::debug!("Channel IDs: {:?}", ids);
     if ids.is_empty() {
         return Err(YtApiError::InvalidParameter);
@@ -399,6 +409,14 @@ pub async fn get_playlist_items(
     api_key: &str,
 ) -> Result<PagedResponse<PlayListItem::Resource>, YtApiError> {
     log::info!("Getting playlist item, 1 quota used");
+    unsafe {
+        let day = Utc::now().day();
+        if day != QUOTA_COUNTER.0 {
+            *QUOTA_COUNTER = (day, 0);
+        }
+        QUOTA_COUNTER.1 += 1;
+        log::info!("Quota used today (in utc): {}", QUOTA_COUNTER.1);
+    }
     log::debug!("Playlist ID: {}", playlist_item_id);
     let mut url = format!(
         "https://www.googleapis.com/youtube/v3/playlistItems?key={}&playlistId={}&maxResults=50",
@@ -589,6 +607,14 @@ pub async fn get_video(
         return Err(YtApiError::InvalidParameter);
     }
     log::info!("Getting {} videos info, 1 quota used", video_ids.len());
+    unsafe {
+        let day = Utc::now().day();
+        if day != QUOTA_COUNTER.0 {
+            *QUOTA_COUNTER = (day, 0);
+        }
+        QUOTA_COUNTER.1 += 1;
+        log::info!("Quota used today (in utc): {}", QUOTA_COUNTER.1);
+    }
     log::debug!("Video IDs: {:?}", video_ids);
     let mut url = format!(
         "https://www.googleapis.com/youtube/v3/videos?key={}&id={}&maxResults=50",
