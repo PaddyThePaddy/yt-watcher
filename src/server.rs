@@ -487,7 +487,7 @@ pub async fn server_start(config: &crate::Config) {
             {
                 data.check_upcoming_event(true).await;
             } else {
-                data.check_upcoming_event(true).await;
+                data.check_upcoming_event(false).await;
             }
             tokio::time::sleep(Duration::from_secs(1)).await;
         }
