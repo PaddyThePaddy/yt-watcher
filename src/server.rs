@@ -716,9 +716,9 @@ impl YtVideosSave {
         self.ids.insert(new_value);
     }
 
-    fn remove(&mut self, value: &String) {
-        self.ids.remove(value);
-    }
+    //fn remove(&mut self, value: &String) {
+    //    self.ids.remove(value);
+    //}
 
     fn extend_from_str(&mut self, value: &str) {
         let mut new_value = value
