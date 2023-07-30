@@ -28,6 +28,16 @@ log_level= "Info"
 # none | gzip | dflate
 compression= "none"
 
+# Use youtube playlist api to retrieve video list.
+# By default, the project uses rss feed to fetch the video list.
+# But youtube will cache the rss result for 15 mins. This might cause the video database outdated.
+# (Each channel will take 1 api quota in each update)
+#
+# Set value to 1, the server will use api call at the first update of the hour
+# Set value to 2, the server will use api call at the first update of the hour and once  after 30 min
+# Set value to 3, the server will use api call at the first update of the hour, once after 20 min and 40 min. And so on...
+use_youtube_api_per_hour = 2
+
 # Information for https server
 #[tls]
 #socket= "127.0.0.1:443"

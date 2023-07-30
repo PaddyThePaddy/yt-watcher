@@ -63,7 +63,7 @@ pub async fn server_start(config: &crate::Config) {
 
     {
         server_data.write().await.restore().await;
-        server_data.write().await.check_upcoming_event().await;
+        server_data.write().await.check_upcoming_event(false).await;
     }
 
     let server_data_clone = server_data.clone();
@@ -465,13 +465,14 @@ pub async fn server_start(config: &crate::Config) {
     let server_data_clone = server_data.clone();
     let video_refresh_interval = config.video_refresh_interval;
     let video_refresh_delay = config.video_refresh_delay.unwrap_or(60);
+    let use_youtube_api_per_hour = config.use_youtube_api_per_hour as u64;
     let _handle = tokio::spawn(async move {
         loop {
+            let now = Utc::now();
+            let minutes =
+                (video_refresh_interval - 1) - now.minute() as u64 % video_refresh_interval;
+            let seconds = 60 - now.second() as u64;
             if video_refresh_interval > 1 && video_refresh_interval <= 60 {
-                let now = Utc::now();
-                let minutes =
-                    (video_refresh_interval - 1) - now.minute() as u64 % video_refresh_interval;
-                let seconds = 60 - now.second() as u64;
                 tokio::time::sleep(Duration::from_secs(
                     (minutes * 60 + seconds + video_refresh_delay) % (video_refresh_interval * 60),
                 ))
@@ -481,7 +482,13 @@ pub async fn server_start(config: &crate::Config) {
             }
             log::info!("Updating upcoming event");
             let mut data = server_data_clone.write().await;
-            data.check_upcoming_event().await;
+            if use_youtube_api_per_hour != 0
+                && minutes % (60 / use_youtube_api_per_hour as u64) < video_refresh_interval
+            {
+                data.check_upcoming_event(true).await;
+            } else {
+                data.check_upcoming_event(true).await;
+            }
             tokio::time::sleep(Duration::from_secs(1)).await;
         }
     });
@@ -973,46 +980,55 @@ impl ServerData {
         }
     }
 
-    pub async fn check_upcoming_event(&mut self) {
+    pub async fn check_upcoming_event(&mut self, use_youtube_channel_api: bool) {
         let mut events = vec![];
         let mut unchecked_video_ids = vec![];
         let mut first_video_after_all_stream_map: HashMap<String, String> = HashMap::new();
         for c in self.yt_channels.values() {
-            //match get_playlist_items(
-            //    &c.upload_playlist,
-            //    &GetPlaylistItemParts::default().content_details(),
-            //    None,
-            //    &self.api_key,
-            //)
-            //.await
-            //{
-            //    Err(e) => log::error!("Fail to get playlist item of channel {}: {:?}", c.id, e),
-            //    Ok(resp) => {
-            //        for v in resp.value {
-            //            if v.id == c.first_video_after_all_stream {
-            //                break;
-            //            }
-            //            unchecked_video_ids.push(v.contentDetails.expect("The response of get playlist request doesn't has the contentDetail field. Does youtube api updated?").videoId);
-            //        }
-            //    }
-            //}
-            match get_video_list_through_rss(&c.id).await {
-                Err(e) => log::error!(
-                    "Fail to get video list through rss of channel {}: {:?}",
-                    c.id,
-                    e
-                ),
-                Ok(resp) => {
-                    for v in resp {
-                        if v == c.first_video_after_all_stream {
-                            break;
+            if use_youtube_channel_api {
+                match get_playlist_items(
+                    &c.upload_playlist,
+                    &GetPlaylistItemParts::default().content_details(),
+                    None,
+                    &self.api_key,
+                )
+                .await
+                {
+                    Err(e) => log::error!("Fail to get playlist item of channel {}: {:?}", c.id, e),
+                    Ok(resp) => {
+                        for v in resp.value {
+                            if let Some(content_detail) = v.contentDetails {
+                                if content_detail.videoId == c.first_video_after_all_stream {
+                                    break;
+                                }
+                                unchecked_video_ids.push(content_detail.videoId);
+                            } else {
+                                log::error!(
+                                    "Playlist item {} does not have contentDetail field",
+                                    v.id
+                                );
+                            }
                         }
-                        unchecked_video_ids.push(v);
+                    }
+                }
+            } else {
+                match get_video_list_through_rss(&c.id).await {
+                    Err(e) => log::error!(
+                        "Fail to get video list through rss of channel {}: {:?}",
+                        c.id,
+                        e
+                    ),
+                    Ok(resp) => {
+                        for v in resp {
+                            if v == c.first_video_after_all_stream {
+                                break;
+                            }
+                            unchecked_video_ids.push(v);
+                        }
                     }
                 }
             }
         }
-
         self.yt_videos.dump(&mut unchecked_video_ids);
 
         match get_all_video_items(

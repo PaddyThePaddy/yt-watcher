@@ -37,6 +37,7 @@ pub struct Config {
     tls: Option<Tls>,
     twitch_key: Option<TwAppKey>,
     video_refresh_delay: Option<u64>,
+    use_youtube_api_per_hour: u32,
 }
 
 #[derive(Debug, Deserialize, Clone)]
