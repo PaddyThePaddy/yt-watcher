@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, ref, type StyleValue, type ComputedRef } from 'vue'
 import * as utils from '../utils'
-const emit = defineEmits(['show_popup', 'update_video_list', 'set_sync_key'])
+const emit = defineEmits(['show_popup', 'update_video_list', 'set_sync_key', 'clear_ch_preview'])
 
 const prop = defineProps({
   yt_thumbnail: String,
@@ -90,6 +90,11 @@ function push_sync_key() {
     utils.push_sync_key(sync_key.value, prop.sub_yt_channels, prop.sub_tw_channels)
   }
 }
+
+function clear_ch() {
+  emit('clear_ch_preview')
+  channel_input.value = ''
+}
 </script>
 <template>
   <div id="menu_header"></div>
@@ -112,7 +117,7 @@ function push_sync_key() {
   "
   />
   <br />
-  <button @click="$emit('clear_ch_preview')">Clear</button>
+  <button @click="clear_ch">Clear</button>
   <button @click="$emit('import_list', channel_input)">Import list</button>
   <br />
   <button

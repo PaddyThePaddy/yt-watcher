@@ -48,7 +48,6 @@ setInterval(
   1000 * 60 * 5
 )
 setInterval(() => {
-  console.log('updating time')
   current_time.value = new Date()
 }, 1000)
 
@@ -64,9 +63,12 @@ function follow_youtube() {
   if (side_bar_props.value.yt_handle == null || side_bar_props.value.yt_handle.length == 0) {
     return
   }
-
-  if (side_bar_props.value.sub_yt_channels.indexOf(side_bar_props.value.yt_handle) == -1) {
-    side_bar_props.value.sub_yt_channels.push(side_bar_props.value.yt_handle)
+  let handle = side_bar_props.value.yt_handle
+  if (handle.startsWith('@')) {
+    handle = handle.substring(1)
+  }
+  if (side_bar_props.value.sub_yt_channels.indexOf(handle) == -1) {
+    side_bar_props.value.sub_yt_channels.push(handle)
     utils.set_yt_id_list(side_bar_props.value.sub_yt_channels)
     update_video_events()
   } else {
