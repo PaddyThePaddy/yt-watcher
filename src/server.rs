@@ -468,11 +468,11 @@ pub async fn server_start(config: &crate::Config) {
     let use_youtube_api_per_hour = config.use_youtube_api_per_hour as u64;
     let _handle = tokio::spawn(async move {
         loop {
-            let now = Utc::now();
-            let minutes =
-                (video_refresh_interval - 1) - now.minute() as u64 % video_refresh_interval;
-            let seconds = 60 - now.second() as u64;
             if video_refresh_interval > 1 && video_refresh_interval <= 60 {
+                let now = Utc::now();
+                let minutes =
+                    (video_refresh_interval - 1) - now.minute() as u64 % video_refresh_interval;
+                let seconds = 60 - now.second() as u64;
                 tokio::time::sleep(Duration::from_secs(
                     (minutes * 60 + seconds + video_refresh_delay) % (video_refresh_interval * 60),
                 ))
@@ -482,8 +482,11 @@ pub async fn server_start(config: &crate::Config) {
             }
             log::info!("Updating upcoming event");
             let mut data = server_data_clone.write().await;
+            let now = Utc::now();
             if use_youtube_api_per_hour != 0
-                && minutes % (60 / use_youtube_api_per_hour) < video_refresh_interval
+                && (now.minute() as u64 % (60 / use_youtube_api_per_hour))
+                    + if now.second() == 0 { 0 } else { 1 }
+                    < video_refresh_interval
             {
                 data.check_upcoming_event(true).await;
             } else {
