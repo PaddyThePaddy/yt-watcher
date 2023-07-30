@@ -207,19 +207,19 @@ pub async fn server_start(config: &crate::Config) {
                     }
                     server_data.touch_tw_channel(&c.login);
                     let channel_save = server_data.tw_channels.get(&c.login).unwrap();
-                    return serde_json::to_string(&YtChannelInfoResponse::data(ChannelInfoData {
+                    serde_json::to_string(&YtChannelInfoResponse::data(ChannelInfoData {
                         id: channel_save.id.clone(),
                         custom_url: channel_save.login.clone(),
                         title: channel_save.name.clone(),
                         thumbnail: channel_save.profile_img.clone(),
                     }))
-                    .unwrap();
+                    .unwrap()
                 } else {
                     log::error!("Search channel failed: Not found");
-                    return serde_json::to_string(&YtChannelInfoResponse::error(
+                    serde_json::to_string(&YtChannelInfoResponse::error(
                         "Search channel failed: Not found".to_string(),
                     ))
-                    .unwrap();
+                    .unwrap()
                 }
             }
         });
@@ -405,7 +405,7 @@ pub async fn server_start(config: &crate::Config) {
                         if let Some(yt_ch) = query.get("yt-ch") {
                             if sync::set_yt_channels(
                                 &key,
-                                yt_ch.split(",").filter(|s| !s.is_empty()),
+                                yt_ch.split(',').filter(|s| !s.is_empty()),
                             )
                             .await
                             .is_err()
@@ -420,7 +420,7 @@ pub async fn server_start(config: &crate::Config) {
                         if let Some(tw_ch) = query.get("tw-ch") {
                             if sync::set_tw_channels(
                                 &key,
-                                tw_ch.split(",").filter(|s| !s.is_empty()),
+                                tw_ch.split(',').filter(|s| !s.is_empty()),
                             )
                             .await
                             .is_err()
@@ -483,7 +483,7 @@ pub async fn server_start(config: &crate::Config) {
             log::info!("Updating upcoming event");
             let mut data = server_data_clone.write().await;
             if use_youtube_api_per_hour != 0
-                && minutes % (60 / use_youtube_api_per_hour as u64) < video_refresh_interval
+                && minutes % (60 / use_youtube_api_per_hour) < video_refresh_interval
             {
                 data.check_upcoming_event(true).await;
             } else {
@@ -665,7 +665,7 @@ struct YtChannelSave {
     first_video_after_all_stream: String,
 }
 
-#[derive(Debug, Serialize, Deserialize, Clone, Hash)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 struct TwChannelSave {
     id: String,
     login: String,
@@ -1286,7 +1286,7 @@ impl ServerData {
             .collect()
     }
 
-    fn filter_new_tw_channel_login<'a>(&self, channel_logins: &'a [String]) -> Vec<String> {
+    fn filter_new_tw_channel_login(&self, channel_logins: &[String]) -> Vec<String> {
         channel_logins
             .iter()
             .filter(|l| !self.tw_channels.contains_key(*l))

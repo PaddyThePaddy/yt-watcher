@@ -72,7 +72,7 @@ static SYNC_KEY_SAVES: Lazy<Mutex<Vec<KeySave>>> = Lazy::new(|| {
 
 pub async fn new_key() -> Uuid {
     let new_key = KeySave::default();
-    let id = new_key.key().clone();
+    let id = *new_key.key();
     log::info!("Generated new sync key: {id}");
     SYNC_KEY_SAVES.lock().await.push(new_key);
     save().await;
@@ -169,7 +169,7 @@ fn init_saver() {
         if SAVER_HANDLE.is_none() {
             SAVER_HANDLE = Some(tokio::spawn(async {
                 loop {
-                    tokio::time::sleep(SAVE_INTERVAL.clone()).await;
+                    tokio::time::sleep(*SAVE_INTERVAL).await;
                     save().await;
                 }
             }));
