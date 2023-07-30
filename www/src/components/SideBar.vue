@@ -93,7 +93,24 @@ function push_sync_key() {
 </script>
 <template>
   <div id="menu_header"></div>
-  <input type="text" placeholder="new channel url" v-model="channel_input" />
+  <input
+    type="text"
+    placeholder="new channel url"
+    v-model="channel_input"
+    title="
+  To add youtube channel:
+  https://www.youtube.com/@GawrGura
+  GawrGura
+  https://www.youtube.com/channel/UCoSrY_IQQVpmIRZ9Xf-y93g
+
+  To add twitch channel:
+  https://www.twitch.tv/restiafps
+  restiafps
+
+  To import list, copy calendar url produced by this tool:
+  https://li.paddycup1.idv.tw/cal?yt-ch=...&tw-ch=...
+  "
+  />
   <br />
   <button @click="$emit('clear_ch_preview')">Clear</button>
   <button @click="$emit('import_list', channel_input)">Import list</button>
