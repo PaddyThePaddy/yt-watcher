@@ -500,7 +500,7 @@ pub async fn server_start(config: &crate::Config) {
         Compression::none => {
             if let Some((https_socket, cert, key)) = tls_info {
                 let routes = warp::get().and(
-                    warp::fs::dir("www")
+                    warp::fs::dir("www/dist")
                         .or(get_yt_channel_info)
                         .or(get_data_endpoint)
                         .or(get_calendar_endpoint)
@@ -518,7 +518,7 @@ pub async fn server_start(config: &crate::Config) {
             } else {
                 warp::serve(
                     warp::get().and(
-                        warp::fs::dir("www")
+                        warp::fs::dir("www/dist")
                             .or(get_yt_channel_info)
                             .or(get_data_endpoint)
                             .or(get_calendar_endpoint)
@@ -534,7 +534,7 @@ pub async fn server_start(config: &crate::Config) {
             let compression = warp::filters::compression::brotli();
             if let Some((https_socket, cert, key)) = tls_info {
                 let routes = warp::get().and(
-                    warp::fs::dir("www")
+                    warp::fs::dir("www/dist")
                         .with(compression)
                         .or(get_yt_channel_info.with(compression))
                         .or(get_data_endpoint.with(compression))
@@ -553,7 +553,7 @@ pub async fn server_start(config: &crate::Config) {
             } else {
                 warp::serve(
                     warp::get().and(
-                        warp::fs::dir("www")
+                        warp::fs::dir("www/dist")
                             .with(compression)
                             .or(get_yt_channel_info.with(compression))
                             .or(get_data_endpoint.with(compression))
@@ -570,7 +570,7 @@ pub async fn server_start(config: &crate::Config) {
             let compression = warp::filters::compression::deflate();
             if let Some((https_socket, cert, key)) = tls_info {
                 let routes = warp::get().and(
-                    warp::fs::dir("www")
+                    warp::fs::dir("www/dist")
                         .with(compression)
                         .or(get_yt_channel_info.with(compression))
                         .or(get_data_endpoint.with(compression))
@@ -589,7 +589,7 @@ pub async fn server_start(config: &crate::Config) {
             } else {
                 warp::serve(
                     warp::get().and(
-                        warp::fs::dir("www")
+                        warp::fs::dir("www/dist")
                             .with(compression)
                             .or(get_yt_channel_info.with(compression))
                             .or(get_data_endpoint.with(compression))
@@ -606,7 +606,7 @@ pub async fn server_start(config: &crate::Config) {
             let compression = warp::filters::compression::gzip();
             if let Some((https_socket, cert, key)) = tls_info {
                 let routes = warp::get().and(
-                    warp::fs::dir("www")
+                    warp::fs::dir("www/dist")
                         .with(compression)
                         .or(get_yt_channel_info.with(compression))
                         .or(get_data_endpoint.with(compression))
@@ -625,7 +625,7 @@ pub async fn server_start(config: &crate::Config) {
             } else {
                 warp::serve(
                     warp::get().and(
-                        warp::fs::dir("www")
+                        warp::fs::dir("www/dist")
                             .with(compression)
                             .or(get_yt_channel_info.with(compression))
                             .or(get_data_endpoint.with(compression))

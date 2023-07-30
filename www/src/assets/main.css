@@ -1,0 +1,52 @@
+/* @import './base.css'; */
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC&display=swap');
+
+:root {
+  --menu-width: 350px;
+}
+
+body {
+  overflow-x: hidden;
+  font-family: 'Noto Sans TC', sans-serif;
+  background-color: #222222;
+  color: #dddddd;
+}
+
+#app {
+  max-width: 100%;
+  margin: 0 auto;
+  padding: 2rem;
+  overflow-x: hidden;
+  overflow-y: auto;
+  font-weight: normal;
+}
+
+a {
+  color: #aba4fb;
+  text-decoration: none;
+}
+
+button {
+  background-color: #181818;
+  color: #eeeeee;
+  border-style: none;
+  border-radius: 5px;
+  font-size: 1.1em;
+  margin: 3px;
+  padding-top: 5px;
+  padding-bottom: 5px;
+  padding-right: 8px;
+  padding-left: 8px;
+  border: solid rgb(0, 101, 135) 1px;
+}
+
+button:hover {
+  border: solid rgb(104, 217, 255) 1px;
+  color: #ffffff;
+}
+
+input,
+label {
+  border-radius: 5px;
+  font-size: 1.3em;
+}

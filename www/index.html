@@ -1,113 +1,13 @@
-<!DOCTYPE html>
-<html>
+<!doctype html>
+<html lang="en">
   <head>
     <meta charset="UTF-8" />
+    <link rel="icon" href="/favicon2.png" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Youtube Watcher</title>
-    <link rel="stylesheet" href="style.css" />
-    <script src="index.js"></script>
+    <title>Stream Watcher</title>
   </head>
-
-  <body onload="load();" onmousemove="save_mouse_pos(event);">
-    <div class="main_frame">
-      <div id="menu_content">
-        <button id="menu_close_btn" onclick="close_menu()">
-          Close &times;
-        </button>
-        <br />
-        <input
-          type="text"
-          id="channel_name"
-          placeholder="new channel url"
-          onkeydown="clear_id()"
-        />
-        <br />
-        <button onclick="clear_id()">Clear</button>
-        <button onclick="import_channel_list()">Import list</button>
-        <br />
-        <button id="check_yt_btn" onclick="check_yt_channel()">
-          Check Youtube
-        </button>
-        <button id="follow_yt_btn" onclick="follow_yt_btn()" hidden="true">
-          Follow Youtube
-        </button>
-        <br />
-        <div id="yt_channel_preview"></div>
-        <button id="check_tw_btn" onclick="check_tw_channel()">
-          Check Twitch
-        </button>
-        <button id="follow_tw_btn" onclick="follow_tw_btn()" hidden="true">
-          Follow Twitch
-        </button>
-        <br />
-        <div id="tw_channel_preview"></div>
-        <button onclick="update_video_list()">Update video list</button>
-        <br />
-        <div>
-          <input type="text" id="sync_key_text" onkeyup="check_key_input();"><br>
-          <button id="set_sync_key_btn" onclick='set_sync_key(document.getElementById("sync_key_text").value)'>Set</button>
-          <button id="new_sync_key_btn" onclick="new_sync_key();">New</button>
-          <button id="pull_sync_btn" onclick="pull_sync_key();">Pull</button>
-          <button id="push_sync_btn" onclick="push_sync_key();">Push</button>
-        </div>
-        <div>
-          <input type="checkbox" id="alarm_cb" value="alarm" />
-          <label for="alarm">Alarm</label>
-          <br>
-          <button onclick="copy_calendar_url()">Copy calendar url</button>
-          <br>
-          <button id="copy_synced_calendar_url_btn" onclick="copy_synced_calendar_url();">Copy synced calendar url</button>
-        </div>
-        <hr />
-        <span id="channel_count"></span>
-        <ul id="channel_id_list"></ul>
-        <button
-          onclick="set_yt_id_list('');set_tw_id_list(''); update_channel_id_list(); update_video_list();"
-        >
-          Clear All
-        </button>
-        <hr />
-        <p>
-          About:<br />
-          這是我為了自己看 vtuber 需求做的小工具<br />
-          在這個網頁可以查詢、追蹤想要的頻道，並且提供 iCal 連結讓其他行事曆 App
-          匯入<br />
-          本意是模仿 Holodex，但是可以用來追蹤訂閱數通常低於 Holodex
-          註冊門檻的小頻道<br />
-          因為這個網站是架在一個超爛雲端主機上，效能非常有限，如果想要追蹤訂閱數高於兩萬的
-          vtuber 頻道，還是推薦用功能比較完整的
-          <a href="https://holodex.net">Holodex</a><br />
-          <br />
-          This is a basic tool made for myself.<br />
-          It can track youtube channels ongoing/upcoming streams and provide a
-          iCal resource to add to calendar apps.<br />
-          This project is highly inspired by Holodex, but can be used to track
-          small channels that doesn't meet the register threshold of Holodex.<br />
-          This site is ran on the most basic cloud machine I can find, so if you
-          want to track channels that has over 20k subs,
-          <a href="https://holodex.net">Holodex</a> is still recommended.<br />
-          <br />
-          Contact: paddycup1 on discord <br />
-          Source:
-          <a href="https://github.com/PaddyThePaddy/yt-watcher"
-            >https://github.com/PaddyThePaddy/yt-watcher</a
-          >
-        </p>
-        <div id="menu_footer"></div>
-      </div>
-      <button id="menu_open_btn" onclick="open_menu()">Menu</button>
-      <h2 id="ongoing_header">Ongoing Streams (0)</h2>
-      <div id="ongoing_video_frame" class="video_container"></div>
-      <h2 id="starting_header" hidden="true">Starting (0)</h2>
-      <div
-        id="starting_video_frame"
-        class="video_container"
-        hidden="true"
-      ></div>
-      <h2 id="upcoming_header">Upcoming Streams (0)</h2>
-      <div id="upcoming_video_frame" class="video_container"></div>
-    </div>
-    <div id="menu_remaining_area" onclick="close_menu()"></div>
-    <span class="popup" id="popup">Copied!</span>
+  <body>
+    <div id="app"></div>
+    <script type="module" src="/src/main.ts"></script>
   </body>
 </html>
