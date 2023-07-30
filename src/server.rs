@@ -1024,11 +1024,10 @@ impl ServerData {
         {
             Err(e) => log::error!("Fail to get video items: {:?}", e),
             Ok(resp) => {
-                for v in resp {
+                for v in resp.iter() {
                     if let Some(snippet) = &v.snippet {
                         if !self.yt_channels.contains_key(&snippet.channelId) {
                             log::info!("Video {} does not belongs to any tracking channel", v.id);
-                            self.yt_videos.remove(&v.id);
                             continue;
                         }
                         if snippet.liveBroadcastContent == "none" {
@@ -1038,10 +1037,9 @@ impl ServerData {
                             }
                         } else {
                             first_video_after_all_stream_map.remove(&snippet.channelId);
-                            self.yt_videos.push_checked(v.id.clone());
                         }
                     }
-                    match UpcomingEvent::try_from((&v, &*self)) {
+                    match UpcomingEvent::try_from((v, &*self)) {
                         Ok(e) => events.push(e),
                         Err(e) => match e {
                             ConvertToUpcomingEventError::AlreadyDone(_) => {}
@@ -1056,6 +1054,18 @@ impl ServerData {
                         },
                     }
                 }
+                self.yt_videos.set(
+                    resp.iter()
+                        .filter(|r| {
+                            if let Some(s) = &r.snippet {
+                                s.liveBroadcastContent != "none"
+                            } else {
+                                false
+                            }
+                        })
+                        .map(|v| v.id.clone())
+                        .collect(),
+                )
             }
         }
 
@@ -1235,9 +1245,13 @@ impl ServerData {
                             )
                                 .into()
                         })),
-                        Err(e) => log::error!("Get stream info of channel {:?} failed: {e}", channels
+                        Err(e) => log::error!(
+                            "Get stream info of channel {:?} failed: {e}",
+                            channels
                                 .iter()
-                                .map(|c| c.login.clone()).collect::<Vec<String>>()),
+                                .map(|c| c.login.clone())
+                                .collect::<Vec<String>>()
+                        ),
                     }
                 }
                 Err(e) => log::error!("Get user info failed: {e}"),
