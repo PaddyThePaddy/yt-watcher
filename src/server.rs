@@ -463,6 +463,32 @@ pub async fn server_start(config: &crate::Config) {
     );
 
     let server_data_clone = server_data.clone();
+    let notice_yt_video_endpoint = warp::get()
+        .and(warp::path("notice-yt-video"))
+        .and(warp::query::<HashMap<String, String>>())
+        .then(move |query: HashMap<String, String>| {
+            let server_data_clone2 = server_data_clone.clone();
+            async move {
+                if let Some(id_list) = query.get("id") {
+                    for id in id_list.split(',') {
+                        server_data_clone2
+                            .write()
+                            .await
+                            .yt_videos
+                            .push_checked(id.to_string());
+                    }
+                    serde_json::to_string(&HashMap::from([("result", "ok")])).unwrap_or_default()
+                } else {
+                    serde_json::to_string(&HashMap::from([(
+                        "result",
+                        "no 'id' parameter is provided",
+                    )]))
+                    .unwrap_or_default()
+                }
+            }
+        });
+
+    let server_data_clone = server_data.clone();
     let video_refresh_interval = config.video_refresh_interval;
     let video_refresh_delay = config.video_refresh_delay.unwrap_or(60);
     let use_youtube_api_per_hour = config.use_youtube_api_per_hour as u64;
@@ -515,6 +541,7 @@ pub async fn server_start(config: &crate::Config) {
                         .or(get_data_endpoint)
                         .or(get_calendar_endpoint)
                         .or(get_tw_channel_info)
+                        .or(notice_yt_video_endpoint)
                         .or(sync_key_endpoint),
                 );
                 futures::join!(
@@ -533,6 +560,7 @@ pub async fn server_start(config: &crate::Config) {
                             .or(get_data_endpoint)
                             .or(get_calendar_endpoint)
                             .or(get_tw_channel_info)
+                            .or(notice_yt_video_endpoint)
                             .or(sync_key_endpoint),
                     ),
                 )
@@ -550,6 +578,7 @@ pub async fn server_start(config: &crate::Config) {
                         .or(get_data_endpoint.with(compression))
                         .or(get_tw_channel_info.with(compression))
                         .or(sync_key_endpoint.with(compression))
+                        .or(notice_yt_video_endpoint.with(compression))
                         .or(get_calendar_endpoint),
                 );
                 futures::join!(
@@ -569,6 +598,7 @@ pub async fn server_start(config: &crate::Config) {
                             .or(get_data_endpoint.with(compression))
                             .or(get_tw_channel_info.with(compression))
                             .or(sync_key_endpoint.with(compression))
+                            .or(notice_yt_video_endpoint.with(compression))
                             .or(get_calendar_endpoint),
                     ),
                 )
@@ -586,6 +616,7 @@ pub async fn server_start(config: &crate::Config) {
                         .or(get_data_endpoint.with(compression))
                         .or(get_tw_channel_info.with(compression))
                         .or(sync_key_endpoint.with(compression))
+                        .or(notice_yt_video_endpoint.with(compression))
                         .or(get_calendar_endpoint),
                 );
                 futures::join!(
@@ -605,6 +636,7 @@ pub async fn server_start(config: &crate::Config) {
                             .or(get_data_endpoint.with(compression))
                             .or(get_tw_channel_info.with(compression))
                             .or(sync_key_endpoint.with(compression))
+                            .or(notice_yt_video_endpoint.with(compression))
                             .or(get_calendar_endpoint),
                     ),
                 )
@@ -622,6 +654,7 @@ pub async fn server_start(config: &crate::Config) {
                         .or(get_data_endpoint.with(compression))
                         .or(get_tw_channel_info.with(compression))
                         .or(sync_key_endpoint.with(compression))
+                        .or(notice_yt_video_endpoint.with(compression))
                         .or(get_calendar_endpoint),
                 );
                 futures::join!(
@@ -641,6 +674,7 @@ pub async fn server_start(config: &crate::Config) {
                             .or(get_data_endpoint.with(compression))
                             .or(get_tw_channel_info.with(compression))
                             .or(sync_key_endpoint.with(compression))
+                            .or(notice_yt_video_endpoint.with(compression))
                             .or(get_calendar_endpoint),
                     ),
                 )

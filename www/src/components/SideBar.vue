@@ -119,6 +119,13 @@ function clear_ch() {
   <br />
   <button @click="clear_ch">Clear</button>
   <button @click="$emit('import_list', channel_input)">Import list</button>
+  <button
+    @click="utils.notice_yt_video(channel_input)"
+    title="Some youtube waiting room started too long ago might not able to be noticed by the server.
+  Input the video url and press this button to let the server check it at the next update cycle"
+  >
+    Notice
+  </button>
   <br />
   <button
     :hidden="prop.yt_handle != undefined && prop.yt_handle.length != 0"

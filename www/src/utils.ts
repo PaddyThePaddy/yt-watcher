@@ -198,3 +198,22 @@ export function pull_sync_key(sync_key: string): Promise<{ yt_ch: string[]; tw_c
       return ret
     })
 }
+
+export function notice_yt_video(value: string) {
+  const url_pattern = new RegExp('https://www.youtube.com/watch\\?.*v=([\\w\\d_-]+)')
+  const id_list = []
+  for (const s of value.split(',')) {
+    const match = url_pattern.exec(s)
+    if (match != null) {
+      id_list.push(match[1])
+    } else {
+      id_list.push(s)
+    }
+  }
+  const url = site_url + 'notice-yt-video?id=' + id_list
+  fetch(url)
+    .then((resp) => resp.json())
+    .then((resp) => {
+      console.log(resp)
+    })
+}
