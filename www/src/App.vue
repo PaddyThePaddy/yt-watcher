@@ -36,7 +36,8 @@ let filtered_upcoming_videos: ComputedRef<VideoEvent[]> = computed(() => {
       search_bar_val.value.trim().length == 0 ||
       v.title.indexOf(search_bar_val.value) != -1 ||
       v.source_name.indexOf(search_bar_val.value) != -1 ||
-      v.source_url.indexOf(search_bar_val.value) != -1
+      v.source_url.indexOf(search_bar_val.value) != -1 ||
+      v.target_url.indexOf(search_bar_val.value) != -1
   )
 })
 let starting_videos: Ref<VideoEvent[]> = ref([])
@@ -46,7 +47,8 @@ let filtered_starting_videos: ComputedRef<VideoEvent[]> = computed(() => {
       search_bar_val.value.trim().length == 0 ||
       v.title.indexOf(search_bar_val.value) != -1 ||
       v.source_name.indexOf(search_bar_val.value) != -1 ||
-      v.source_url.indexOf(search_bar_val.value) != -1
+      v.source_url.indexOf(search_bar_val.value) != -1 ||
+      v.target_url.indexOf(search_bar_val.value) != -1
   )
 })
 let ongoing_videos: Ref<VideoEvent[]> = ref([])
@@ -56,7 +58,8 @@ let filtered_ongoing_videos: ComputedRef<VideoEvent[]> = computed(() => {
       search_bar_val.value.trim().length == 0 ||
       v.title.indexOf(search_bar_val.value) != -1 ||
       v.source_name.indexOf(search_bar_val.value) != -1 ||
-      v.source_url.indexOf(search_bar_val.value) != -1
+      v.source_url.indexOf(search_bar_val.value) != -1 ||
+      v.target_url.indexOf(search_bar_val.value) != -1
   )
 })
 let current_time: Ref<Date> = ref(new Date())
@@ -457,7 +460,14 @@ update_video_events()
       <span class="hdr_floating_btn" @click="import_list(search_bar_val)">Import List</span>
     </div>
   </div>
-  <h2>Ongoing ({{ ongoing_videos.length }})</h2>
+  <h2>
+    Ongoing (<span v-if="ongoing_videos.length == filtered_ongoing_videos.length">{{
+      ongoing_videos.length
+    }}</span
+    ><span v-if="ongoing_videos.length != filtered_ongoing_videos.length"
+      >{{ filtered_ongoing_videos.length }} / {{ ongoing_videos.length }}</span
+    >)
+  </h2>
   <div class="video_container">
     <VideoComponent
       v-for="(video, index) in filtered_ongoing_videos"
@@ -467,7 +477,14 @@ update_video_events()
     ></VideoComponent>
   </div>
 
-  <h2 v-if="starting_videos.length != 0">Starting ({{ starting_videos.length }})</h2>
+  <h2 v-if="starting_videos.length != 0">
+    Starting (<span v-if="starting_videos.length == filtered_starting_videos.length">{{
+      starting_videos.length
+    }}</span
+    ><span v-if="starting_videos.length != filtered_starting_videos.length"
+      >{{ filtered_starting_videos.length }} / {{ starting_videos.length }}</span
+    >)
+  </h2>
   <div class="video_container" v-if="starting_videos.length != 0">
     <VideoComponent
       v-for="(video, index) in filtered_starting_videos"
@@ -477,7 +494,14 @@ update_video_events()
     ></VideoComponent>
   </div>
 
-  <h2>Upcoming ({{ upcoming_videos.length }})</h2>
+  <h2>
+    Upcoming (<span v-if="upcoming_videos.length == filtered_upcoming_videos.length">{{
+      upcoming_videos.length
+    }}</span
+    ><span v-if="upcoming_videos.length != filtered_upcoming_videos.length"
+      >{{ filtered_upcoming_videos.length }} / {{ upcoming_videos.length }}</span
+    >)
+  </h2>
   <div class="video_container">
     <VideoComponent
       v-for="(video, index) in filtered_upcoming_videos"
