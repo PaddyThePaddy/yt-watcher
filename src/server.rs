@@ -1479,7 +1479,7 @@ impl ServerData {
                             .tw_channels
                             .get_mut(&user.login)
                             .expect("Get channel save by login failed");
-                        channel_save.login = user.id.clone();
+                        channel_save.login = user.login.clone();
                         channel_save.profile_img = user.profile_image_url.clone();
                         channel_save.name = user.display_name.clone();
                     }
