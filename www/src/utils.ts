@@ -1,3 +1,4 @@
+export const REGEXP_SPECIAL_CHAR = /[!#$%^&*)(+=.<>{}[\]:;'"|~`_-]/g
 export let site_url = document.URL
 if (site_url.endsWith('index.html')) {
   site_url = site_url.substring(0, site_url.length - 10)

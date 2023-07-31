@@ -98,7 +98,7 @@ function clear_ch() {
 </script>
 <template>
   <div id="menu_header"></div>
-  <input
+  <!--<input
     type="text"
     placeholder="new channel url"
     v-model="channel_input"
@@ -168,7 +168,9 @@ function clear_ch() {
     <span class="chanel_display_name">{{ prop.tw_display_name }}</span>
   </div>
   <br />
+-->
   <div>
+    <b style="margin: 5px; display: block">Sync Key</b>
     <input
       type="text"
       v-model="sync_key"
