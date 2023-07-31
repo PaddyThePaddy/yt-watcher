@@ -299,8 +299,12 @@ function import_list(list: string) {
     for (const ch of yt_list[1].split(',').filter((s) => s.length != 0)) {
       promises.push(
         utils.load_youtube_channel(ch).then((info) => {
-          if (side_bar_props.value.sub_yt_channels.indexOf(info.handle) == -1) {
-            side_bar_props.value.sub_yt_channels.push(info.handle)
+          let handle = info.handle
+          if (handle.startsWith('@')) {
+            handle = handle.substring(1)
+          }
+          if (side_bar_props.value.sub_yt_channels.indexOf(handle) == -1) {
+            side_bar_props.value.sub_yt_channels.push(handle)
           }
         })
       )
