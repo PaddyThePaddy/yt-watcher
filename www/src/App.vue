@@ -51,6 +51,9 @@ setInterval(() => {
   current_time.value = new Date()
 }, 1000)
 
+side_bar_props.value.sub_tw_channels.sort()
+side_bar_props.value.sub_yt_channels.sort()
+
 function load_youtube(query: string) {
   utils.load_youtube_channel(query).then((data) => {
     side_bar_props.value.yt_display_name = data.display
@@ -69,6 +72,7 @@ function follow_youtube() {
   }
   if (side_bar_props.value.sub_yt_channels.indexOf(handle) == -1) {
     side_bar_props.value.sub_yt_channels.push(handle)
+    side_bar_props.value.sub_yt_channels.sort()
     utils.set_yt_id_list(side_bar_props.value.sub_yt_channels)
     update_video_events()
   } else {
@@ -91,6 +95,7 @@ function follow_twitch() {
 
   if (side_bar_props.value.sub_tw_channels.indexOf(side_bar_props.value.tw_handle) == -1) {
     side_bar_props.value.sub_tw_channels.push(side_bar_props.value.tw_handle)
+    side_bar_props.value.sub_tw_channels.sort()
     utils.set_tw_id_list(side_bar_props.value.sub_tw_channels)
     update_video_events()
   } else {
@@ -167,12 +172,14 @@ function pull_sync_key() {
         side_bar_props.value.sub_yt_channels.push(ch)
       }
     }
+    side_bar_props.value.sub_yt_channels.sort()
     utils.set_yt_id_list(side_bar_props.value.sub_yt_channels)
     for (const ch of resp.tw_ch) {
       if (side_bar_props.value.sub_tw_channels.indexOf(ch) == -1) {
         side_bar_props.value.sub_tw_channels.push(ch)
       }
     }
+    side_bar_props.value.sub_tw_channels.sort()
     utils.set_tw_id_list(side_bar_props.value.sub_tw_channels)
     update_video_events()
   })
@@ -240,6 +247,8 @@ function import_list(list: string) {
     }
   }
   Promise.all(promises).then(() => {
+    side_bar_props.value.sub_yt_channels.sort()
+    side_bar_props.value.sub_tw_channels.sort()
     utils.set_yt_id_list(side_bar_props.value.sub_yt_channels)
     utils.set_tw_id_list(side_bar_props.value.sub_tw_channels)
     update_video_events()
