@@ -277,14 +277,17 @@ pub async fn get_all_channels(
     key: &str,
 ) -> Result<Vec<Channel::Resource>, YtApiError> {
     let mut result = vec![];
-    let mut page_token = None;
-    loop {
-        let current_page = get_channels(ids, parts, page_token, key).await?;
-        page_token = current_page.next_page_token;
-        result.extend(current_page.value.into_iter());
-        if page_token.is_none() {
-            break;
-        }
+    let mut idx = 0;
+    while idx * 50 < ids.len() {
+        let get_channels = get_channels(
+            &ids[idx * 50..ids.len().min(idx * 50 + 50)],
+            parts,
+            None,
+            key,
+        )
+        .await?;
+        result.extend(get_channels.value.into_iter());
+        idx += 1;
     }
     Ok(result)
 }
