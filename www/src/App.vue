@@ -407,7 +407,7 @@ function search_bar_unfocused() {
   if (search_bar == null) {
     return
   }
-  search_bar.style.width = '5em'
+  search_bar.style.width = '4em'
   is_search_bar_focused.value = false
 }
 function search_bar_changed() {
@@ -769,7 +769,7 @@ div.header > * {
 }
 
 input#search_bar {
-  width: 5em;
+  width: 4em;
   transition: width 0.2s;
   border-radius: 2em;
   padding-top: 2px;
