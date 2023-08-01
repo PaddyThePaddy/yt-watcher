@@ -149,7 +149,9 @@ function follow_youtube() {
     side_bar_props.value.sub_yt_channels.sort()
     utils.set_yt_id_list(side_bar_props.value.sub_yt_channels)
     update_video_events()
+    show_popup('Followed')
   } else {
+    show_popup(yt_channel_data.value.handle + ' already followed')
     console.log(yt_channel_data.value.handle + ' already followed')
   }
 }
@@ -181,7 +183,9 @@ function follow_twitch() {
     side_bar_props.value.sub_tw_channels.sort()
     utils.set_tw_id_list(side_bar_props.value.sub_tw_channels)
     update_video_events()
+    show_popup('Followed')
   } else {
+    show_popup(tw_channel_data.value.handle + ' already followed')
     console.log(tw_channel_data.value.handle + ' already followed')
   }
 }
