@@ -444,6 +444,12 @@ function show_popup(msg: string) {
   popup_msg.value = msg
 }
 
+document.getElementById('body')?.addEventListener('keyup', (event) => {
+  if (event.key == 's' || event.key == 'S') {
+    document.getElementById('search_bar')?.focus()
+  }
+})
+
 update_video_events()
 </script>
 
