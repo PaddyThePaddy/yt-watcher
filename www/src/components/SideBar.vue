@@ -299,21 +299,13 @@ label.checked {
   }
 }
 @media (pointer: none), (pointer: coarse) {
-  /*div#menu_footer {
-    height: 60px;
-    visibility: visible;
-  }
-  div#menu_header {
-    height: 0px;
-    visibility: hidden;
-  }*/
   div#menu_footer {
-    height: 0px;
-    visibility: hidden;
-  }
-  div#menu_header {
     height: 60px;
     visibility: visible;
+  }
+  div#menu_header {
+    height: 0px;
+    visibility: hidden;
   }
 }
 </style>

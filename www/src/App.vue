@@ -363,7 +363,7 @@ function search_bar_focused() {
   if (refresh_btn == null || search_bar == null) {
     return
   }
-  const search_bar_left = refresh_btn.offsetLeft + refresh_btn.offsetWidth + 10
+  const search_bar_left = refresh_btn.offsetLeft + refresh_btn.offsetWidth + 20
   const width = window.innerWidth - search_bar_left * 2
   search_bar.style.width = width + 'px'
 }
@@ -426,6 +426,21 @@ function search_bar_keypress(event: KeyboardEvent) {
       <label style="display: flex">
         <img class="floating_btn_icon" src="/icons8-refresh.svg" />
       </label>
+    </div>
+    <div style="flex: 1 1 auto; text-align: right; pointer-events: none">
+      <div
+        class="header_btn"
+        id="cancel_btn"
+        @click="search_bar_val = ''"
+        style="pointer-events: all"
+        :class="{ show: search_bar_val != '' }"
+      >
+        <button
+          style="height: 1em; background-color: #0000; border: none; color: black; margin: 0px"
+        >
+          X
+        </button>
+      </div>
     </div>
   </div>
   <div class="header_floating_area">
@@ -546,6 +561,7 @@ function search_bar_keypress(event: KeyboardEvent) {
       v-bind:key="index"
     ></VideoComponent>
   </div>
+  <div id="footer"></div>
   <div
     id="menu_remaining_area"
     v-if="sidebar_control"
@@ -620,7 +636,7 @@ button#menu_close_btn {
   visibility: hidden;
 }
 
-div#menu_footer {
+div#footer {
   visibility: hidden;
 }
 
@@ -636,7 +652,7 @@ div.header {
   left: 0;
   padding-top: 10px;
   padding-bottom: 10px;
-  z-index: 3;
+  z-index: 4;
   display: flex;
   user-select: none;
   pointer-events: none;
@@ -647,18 +663,20 @@ div.header > * {
 }
 
 input#search_bar {
-  margin-left: 1em;
   width: 5em;
   transition: width 0.2s;
   border-radius: 2em;
   padding-top: 2px;
   padding-bottom: 2px;
   padding-left: 1em;
-  flex: 0 1 auto;
   border-style: none;
   pointer-events: all;
 }
 
+div#search_bar_container {
+  width: 5rem;
+  transition: width 0.2s;
+}
 /* input#search_bar:focus { */
 /* flex: 2 0 auto; */
 /* } */
@@ -671,6 +689,8 @@ div.header_floating_area {
   display: flex;
   justify-content: center;
   flex-wrap: wrap;
+  pointer-events: none;
+  z-index: 3;
 }
 
 div.hdr_floating_btn {
@@ -684,6 +704,7 @@ div.hdr_floating_btn {
   vertical-align: top;
   text-align: center;
   overflow: clip;
+  pointer-events: all;
 }
 
 div.hdr_floating_btn_show {
@@ -712,6 +733,19 @@ div.hdr_floating_btn:hover {
   filter: brightness(1.2);
 }
 
+div.hdr_floating_btn:active {
+  filter: brightness(1.4);
+}
+
+div#cancel_btn {
+  translate: 100% 0;
+  transition: translate 0.2s;
+}
+
+div#cancel_btn.show {
+  translate: -5px 0;
+}
+
 @media (pointer: none), (pointer: coarse) {
   #floating_controls {
     position: fixed;
@@ -729,9 +763,24 @@ div.hdr_floating_btn:hover {
     margin: 10px;
   }
 
-  div#menu_footer {
-    height: 30px;
+  div#footer {
+    height: 2em;
     visibility: visible;
+    padding: 10px 0px;
+  }
+
+  div.header {
+    top: auto;
+    bottom: 0px;
+  }
+
+  div.header_floating_area {
+    top: auto;
+    bottom: 0px;
+    display: flex;
+  }
+  div.hdr_floating_btn_show {
+    translate: 0 -3.5em;
   }
 }
 </style>
