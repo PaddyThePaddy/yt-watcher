@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref, type StyleValue, type ComputedRef } from 'vue'
+import { computed, ref, type StyleValue, type ComputedRef, type Ref } from 'vue'
 import * as utils from '../utils'
 const emit = defineEmits(['show_popup', 'update_video_list', 'set_sync_key'])
 
@@ -12,7 +12,10 @@ const prop = defineProps({
   tw_handle: String,
   tw_display_name: String,
 
-  sync_key: String,
+  sync_key: {
+    type: String,
+    required: true
+  },
   sub_yt_channels: {
     type: Array<string>,
     required: true
@@ -23,9 +26,9 @@ const prop = defineProps({
   }
 })
 const alarm_enabled = ref(false)
-const sync_key = ref(prop.sync_key)
-const sync_key_class: ComputedRef<StyleValue> = computed(() => {
-  return [sync_key.value != null && utils.verify_sync_key(sync_key.value) ? '' : 'error']
+const sync_key: Ref<string> = ref(prop.sync_key)
+const is_sync_key_valid = computed(() => {
+  return utils.verify_sync_key(sync_key.value)
 })
 
 function copy_calendar_url() {
@@ -67,13 +70,6 @@ function copy_synced_calendar_url() {
   })
 }
 
-function set_sync_key() {
-  if (sync_key.value != null && utils.verify_sync_key(sync_key.value)) {
-    utils.set_sync_key(sync_key.value)
-    emit('set_sync_key', sync_key.value)
-  }
-}
-
 function new_sync_key() {
   utils.new_sync_key().then((key) => {
     console.log(key)
@@ -89,6 +85,12 @@ function push_sync_key() {
     utils.push_sync_key(sync_key.value, prop.sub_yt_channels, prop.sub_tw_channels)
   }
 }
+
+function on_sync_key_changed() {
+  if (utils.verify_sync_key(sync_key.value)) {
+    emit('set_sync_key', sync_key.value)
+  }
+}
 </script>
 <template>
   <div id="menu_header"></div>
@@ -97,13 +99,13 @@ function push_sync_key() {
     <input
       type="text"
       v-model="sync_key"
-      placeholder="synchronize key"
-      :class="sync_key_class"
+      placeholder="Synchronize Key"
+      :class="{ error: sync_key.length > 0 && !utils.verify_sync_key(sync_key) }"
+      @keyup="on_sync_key_changed"
     /><br />
-    <button @click="set_sync_key">Set</button>
     <button @click="new_sync_key">New</button>
-    <button @click="$emit('pull_sync_key')">Pull</button>
-    <button @click="push_sync_key">Push</button>
+    <button v-if="is_sync_key_valid" @click="$emit('pull_sync_key')">Pull</button>
+    <button v-if="is_sync_key_valid" @click="push_sync_key">Push</button>
   </div>
   <br />
   <div>
