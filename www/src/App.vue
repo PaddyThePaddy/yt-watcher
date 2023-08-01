@@ -386,7 +386,7 @@ const search_bar_place_holder: ComputedRef<string> = computed(() => {
   }
 })
 const show_search_bar_help: ComputedRef<boolean> = computed(() => {
-  return search_bar_val.value.trim() == '?'
+  return search_bar_val.value.trim() == '?' || search_bar_val.value.trim() == '？'
 })
 const help_lang: Ref<boolean> = ref(false)
 
