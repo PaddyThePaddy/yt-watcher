@@ -193,7 +193,7 @@ input {
 }
 
 input.error {
-  background-color: rgb(255, 111, 111);
+  border: solid red 3px;
 }
 
 label {

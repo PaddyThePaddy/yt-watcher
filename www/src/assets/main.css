@@ -50,3 +50,7 @@ label {
   border-radius: 5px;
   font-size: 1.3em;
 }
+
+input:focus {
+  outline: none;
+}

@@ -149,7 +149,7 @@ export function get_video_data(
 }
 
 export function verify_sync_key(key: string): boolean {
-  return /[\w\d]{8}-[\w\d]{4}-[\w\d]{4}-[\w\d]{4}-[\w\d]{12}/.test(key)
+  return /^[\w\d]{8}-[\w\d]{4}-[\w\d]{4}-[\w\d]{4}-[\w\d]{12}$/.test(key)
 }
 
 export function new_sync_key(): Promise<string | undefined | void> {
