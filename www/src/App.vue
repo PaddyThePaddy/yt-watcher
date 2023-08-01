@@ -384,6 +384,7 @@ function search_bar_keypress(event: KeyboardEvent) {
     search_bar_val.value = ''
   }
 }
+update_video_events()
 </script>
 
 <template>
