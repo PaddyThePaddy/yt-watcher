@@ -3,6 +3,7 @@ fn main() {
     //println!("cargo:rerun-if-changed=www/src");
     let pwd = std::env::current_dir().unwrap();
     if std::env::consts::OS == "windows" {
+        println!("cargo:rerun-if-changed=www\\src");
         assert!(std::process::Command::new("npm.cmd")
             .arg("install")
             .current_dir(pwd.join("www/"))
@@ -17,6 +18,7 @@ fn main() {
             .expect("Build vue project failed.")
             .success());
     } else {
+        println!("cargo:rerun-if-changed=www/src");
         assert!(std::process::Command::new("npm")
             .arg("install")
             .current_dir(pwd.join("www/"))
