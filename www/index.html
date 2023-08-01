@@ -3,8 +3,25 @@
   <head>
     <meta charset="UTF-8" />
     <link rel="icon" href="/favicon.png" />
+    <link rel="manifest" href="manifest.json" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Stream Watcher</title>
+    <script>
+      window.addEventListener('load', () => {
+        registerSW()
+      })
+
+      // Register the Service Worker
+      async function registerSW() {
+        if ('serviceWorker' in navigator) {
+          try {
+            await navigator.serviceWorker.register('worker.js')
+          } catch (e) {
+            console.log('SW registration failed')
+          }
+        }
+      }
+    </script>
   </head>
   <body id="body">
     <div id="app"></div>

@@ -1,0 +1,20 @@
+{
+  "name": "Stream Watcher",
+  "short_name": "StreamWatcher",
+  "start_url": "index.html",
+  "display": "standalone",
+  "background_color": "#222222",
+  "theme_color": "#444444",
+  "icons": [
+    {
+      "src": "/favicon.png",
+      "type": "image/png",
+      "sizes": "32x32"
+    },
+    {
+      "src": "/favicon_144.png",
+      "type": "image/png",
+      "sizes": "144x144"
+    }
+  ]
+}
