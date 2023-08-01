@@ -543,6 +543,10 @@ update_video_events()
         restiafps <br /><br />
         可以用側邊欄產生的行事曆網址一次匯入所有頻道:<br />
         https://li.paddycup1.idv.tw/cal?yt-ch=...&tw-ch=...<br /><br />
+        讓 server "注意"到非公開 / 過於老舊的直播待機室:<br />
+        https://www.youtube.com/watch?v=k7dTnCl2pVA<br />
+        k7dTnCl2pVA<br />
+        https://youtu.be/k7dTnCl2pVA<br /><br />
         Click for English / 點擊以顯示英文</span
       >
       <span v-if="help_lang" class="hdr_floating_btn"
@@ -554,6 +558,10 @@ update_video_events()
         restiafps <br /><br />
         To import list, copy calendar url produced by this tool:<br />
         https://li.paddycup1.idv.tw/cal?yt-ch=...&tw-ch=...<br /><br />
+        To let the server "notice" a unlisted / old waiting room:<br />
+        https://www.youtube.com/watch?v=k7dTnCl2pVA<br />
+        k7dTnCl2pVA<br />
+        https://youtu.be/k7dTnCl2pVA<br /><br />
         Click for Chinese / 點擊以顯示中文</span
       >
     </div>
