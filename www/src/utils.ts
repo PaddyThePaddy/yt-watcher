@@ -32,6 +32,11 @@ export type UpcomingEvent = {
   uid: string
 }
 
+export const mouse_pos = { x: 0, y: 0 }
+export function on_mouse_move(e: MouseEvent) {
+  mouse_pos.x = e.x
+  mouse_pos.y = e.y
+}
 export function get_yt_id_list(): string[] {
   const cookies: string[] = document.cookie.split(';')
   for (const c of cookies) {
@@ -163,7 +168,9 @@ export function new_sync_key(): Promise<string | undefined | void> {
 export function push_sync_key(sync_key: string, yt_ch: string[], tw_ch: string[]) {
   if (!verify_sync_key(sync_key)) {
     console.log('invalid sync key')
-    return
+    return new Promise((_, reject) => {
+      reject('Invalid sync key')
+    })
   }
   let url = site_url + 'sync/push?key=' + sync_key
   if (yt_ch.length != 0) {
@@ -172,10 +179,11 @@ export function push_sync_key(sync_key: string, yt_ch: string[], tw_ch: string[]
   if (tw_ch.length != 0) {
     url += '&tw-ch=' + tw_ch.join(',')
   }
-  fetch(url)
+  return fetch(url)
     .then((resp) => resp.json())
     .then((resp) => {
       console.log(resp)
+      return resp
     })
 }
 
@@ -214,9 +222,10 @@ export function notice_yt_video(value: string) {
     }
   }
   const url = site_url + 'notice-yt-video?id=' + id_list
-  fetch(url)
+  return fetch(url)
     .then((resp) => resp.json())
     .then((resp) => {
       console.log(resp)
+      return resp
     })
 }

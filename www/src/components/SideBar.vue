@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, ref, type StyleValue, type ComputedRef, type Ref } from 'vue'
 import * as utils from '../utils'
-const emit = defineEmits(['show_popup', 'update_video_list', 'set_sync_key'])
+const emit = defineEmits(['show_popup', 'update_video_list', 'set_sync_key', 'show_popup'])
 
 const prop = defineProps({
   yt_thumbnail: String,
@@ -71,18 +71,32 @@ function copy_synced_calendar_url() {
 }
 
 function new_sync_key() {
-  utils.new_sync_key().then((key) => {
-    console.log(key)
-    if (key != null) {
-      sync_key.value = key
-      emit('set_sync_key', key)
+  utils.new_sync_key().then(
+    (key) => {
+      console.log(key)
+      if (key != null) {
+        sync_key.value = key
+        emit('set_sync_key', key)
+        emit('show_popup', 'Succeed')
+      }
+    },
+    (reject) => {
+      emit('show_popup', reject)
     }
-  })
+  )
 }
 
 function push_sync_key() {
   if (sync_key.value != null && utils.verify_sync_key(sync_key.value)) {
-    utils.push_sync_key(sync_key.value, prop.sub_yt_channels, prop.sub_tw_channels)
+    utils.push_sync_key(sync_key.value, prop.sub_yt_channels, prop.sub_tw_channels).then(
+      (resp) => {
+        console.log('show popup ' + resp.result)
+        emit('show_popup', resp.result)
+      },
+      (reject) => {
+        emit('show_popup', reject)
+      }
+    )
   }
 }
 

@@ -96,6 +96,14 @@ const tw_channel_data: Ref<{
   profile_img: '',
   error_msg: ''
 })
+const popup_msg = ref('')
+const popup_start_time: Ref<null | number> = ref(null)
+const display_popup = computed(() => {
+  if (popup_start_time.value == null) {
+    return false
+  }
+  return current_time.value.getTime() - popup_start_time.value < 2000
+})
 
 setInterval(
   () => {
@@ -241,23 +249,30 @@ function pull_sync_key() {
   if (!utils.verify_sync_key(side_bar_props.value.sync_key)) {
     return
   }
-  utils.pull_sync_key(side_bar_props.value.sync_key).then((resp) => {
-    for (const ch of resp.yt_ch) {
-      if (side_bar_props.value.sub_yt_channels.indexOf(ch) == -1) {
-        side_bar_props.value.sub_yt_channels.push(ch)
+  utils.pull_sync_key(side_bar_props.value.sync_key).then(
+    (resp) => {
+      for (const ch of resp.yt_ch) {
+        if (side_bar_props.value.sub_yt_channels.indexOf(ch) == -1) {
+          side_bar_props.value.sub_yt_channels.push(ch)
+        }
       }
-    }
-    side_bar_props.value.sub_yt_channels.sort()
-    utils.set_yt_id_list(side_bar_props.value.sub_yt_channels)
-    for (const ch of resp.tw_ch) {
-      if (side_bar_props.value.sub_tw_channels.indexOf(ch) == -1) {
-        side_bar_props.value.sub_tw_channels.push(ch)
+      side_bar_props.value.sub_yt_channels.sort()
+      utils.set_yt_id_list(side_bar_props.value.sub_yt_channels)
+      for (const ch of resp.tw_ch) {
+        if (side_bar_props.value.sub_tw_channels.indexOf(ch) == -1) {
+          side_bar_props.value.sub_tw_channels.push(ch)
+        }
       }
+      side_bar_props.value.sub_tw_channels.sort()
+      utils.set_tw_id_list(side_bar_props.value.sub_tw_channels)
+      update_video_events()
+      console.log('pulled')
+      show_popup('Pull succeed')
+    },
+    (reject) => {
+      show_popup(reject)
     }
-    side_bar_props.value.sub_tw_channels.sort()
-    utils.set_tw_id_list(side_bar_props.value.sub_tw_channels)
-    update_video_events()
-  })
+  )
 }
 
 function unfollow_yt_ch(ch: string) {
@@ -298,6 +313,7 @@ function clear_ch_preview() {
 function import_list(list: string) {
   const yt_list = new RegExp('.+(?:\\?|&)yt-ch=([^&]+)').exec(list)
   let promises = []
+  let imported_count = 0
   if (yt_list != null) {
     for (const ch of yt_list[1].split(',').filter((s) => s.length != 0)) {
       promises.push(
@@ -308,6 +324,7 @@ function import_list(list: string) {
           }
           if (side_bar_props.value.sub_yt_channels.indexOf(handle) == -1) {
             side_bar_props.value.sub_yt_channels.push(handle)
+            imported_count += 1
           }
         })
       )
@@ -320,6 +337,7 @@ function import_list(list: string) {
         utils.load_twitch_channel(ch).then((info) => {
           if (side_bar_props.value.sub_tw_channels.indexOf(info.handle) == -1) {
             side_bar_props.value.sub_tw_channels.push(info.handle)
+            imported_count += 1
           }
         })
       )
@@ -331,6 +349,7 @@ function import_list(list: string) {
     utils.set_yt_id_list(side_bar_props.value.sub_yt_channels)
     utils.set_tw_id_list(side_bar_props.value.sub_tw_channels)
     update_video_events()
+    show_popup('Imported ' + imported_count + ' channels')
   })
 }
 
@@ -400,6 +419,31 @@ function search_bar_keypress(event: KeyboardEvent) {
     search_bar_val.value = ''
   }
 }
+document.getElementById('body')!.addEventListener('mousemove', utils.on_mouse_move)
+document.getElementById('body')!.addEventListener('mousedown', utils.on_mouse_move)
+
+function notice_yt_video() {
+  utils.notice_yt_video(search_bar_val.value).then(
+    (resp) => {
+      show_popup(resp.result)
+    },
+    (reject) => {
+      show_popup(reject)
+    }
+  )
+}
+
+function show_popup(msg: string) {
+  const popup_ele = document.getElementById('popup')
+  if (popup_ele == null) {
+    return
+  }
+  popup_ele.style.top = utils.mouse_pos.y + 5 + 'px'
+  popup_ele.style.left = utils.mouse_pos.x + 5 + 'px'
+  popup_start_time.value = current_time.value.getTime()
+  popup_msg.value = msg
+}
+
 update_video_events()
 </script>
 
@@ -414,6 +458,7 @@ update_video_events()
       @clear_ch_preview="clear_ch_preview"
       @import_list="import_list"
       @pull_sync_key="pull_sync_key"
+      @show_popup="show_popup"
     ></SideBar>
   </div>
   <div class="header" style="background-color: #555; justify-content: center">
@@ -511,7 +556,7 @@ update_video_events()
         hdr_floating_btn_hidden: !is_youtube_video_url
       }"
     >
-      <span class="hdr_floating_btn" @click="utils.notice_yt_video(search_bar_val)">Notice</span>
+      <span class="hdr_floating_btn" @click="notice_yt_video">Notice</span>
     </div>
     <div
       class="hdr_floating_btn"
@@ -622,6 +667,7 @@ update_video_events()
     v-if="sidebar_control"
     @click="sidebar_control = !sidebar_control"
   ></div>
+  <div id="popup" :class="{ popup_show: display_popup }">{{ popup_msg }}</div>
 </template>
 
 <style scoped>
@@ -799,6 +845,21 @@ div#cancel_btn {
 
 div#cancel_btn.show {
   translate: -2em 0;
+}
+
+div#popup {
+  opacity: 0;
+  transition: opacity 0.2s;
+  pointer-events: none;
+  background-color: rgb(90, 90, 241);
+  position: absolute;
+  padding: 10px;
+  border-radius: 8px;
+  z-index: 4;
+}
+
+div#popup.popup_show {
+  opacity: 1;
 }
 
 @media (pointer: none), (pointer: coarse) {

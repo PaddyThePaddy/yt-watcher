@@ -432,7 +432,7 @@ pub async fn server_start(config: &crate::Config) {
                                 .unwrap_or_default();
                             }
                         }
-                        serde_json::to_string(&HashMap::from([("result".to_string(), "ok")]))
+                        serde_json::to_string(&HashMap::from([("result".to_string(), "Ok")]))
                             .unwrap_or_default()
                     } else {
                         serde_json::to_string(&HashMap::from([(
@@ -477,7 +477,7 @@ pub async fn server_start(config: &crate::Config) {
                             .yt_videos
                             .push_checked(id.to_string());
                     }
-                    serde_json::to_string(&HashMap::from([("result", "ok")])).unwrap_or_default()
+                    serde_json::to_string(&HashMap::from([("result", "Ok")])).unwrap_or_default()
                 } else {
                     serde_json::to_string(&HashMap::from([(
                         "result",
