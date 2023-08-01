@@ -358,6 +358,19 @@ const is_import_url: ComputedRef<boolean> = computed(() =>
   IMPORT_URL_PATTERN.test(search_bar_val.value)
 )
 
+const is_search_bar_focused: Ref<boolean> = ref(false)
+const search_bar_place_holder: ComputedRef<string> = computed(() => {
+  if (is_search_bar_focused.value) {
+    return 'Input ? for help'
+  } else {
+    return 'Search'
+  }
+})
+const show_search_bar_help: ComputedRef<boolean> = computed(() => {
+  return search_bar_val.value.trim() == '?'
+})
+const help_lang: Ref<boolean> = ref(false)
+
 function search_bar_focused() {
   const refresh_btn = document.getElementById('refresh_btn')
   const search_bar = document.getElementById('search_bar')
@@ -367,6 +380,7 @@ function search_bar_focused() {
   const search_bar_left = refresh_btn.offsetLeft + refresh_btn.offsetWidth + 20
   const width = window.innerWidth - search_bar_left * 2
   search_bar.style.width = width + 'px'
+  is_search_bar_focused.value = true
 }
 
 function search_bar_unfocused() {
@@ -375,6 +389,7 @@ function search_bar_unfocused() {
     return
   }
   search_bar.style.width = '5em'
+  is_search_bar_focused.value = false
 }
 function search_bar_changed() {
   yt_channel_state.value = 'none'
@@ -409,7 +424,7 @@ update_video_events()
     <input
       type="text"
       v-model="search_bar_val"
-      placeholder="Search"
+      :placeholder="search_bar_place_holder"
       id="search_bar"
       @focus="search_bar_focused"
       @focusout="search_bar_unfocused"
@@ -511,6 +526,39 @@ update_video_events()
       }"
     >
       <span class="hdr_floating_btn" @click="import_list(search_bar_val)">Import List</span>
+    </div>
+    <div
+      class="hdr_floating_btn"
+      style="background-color: rgb(0, 142, 189); padding: 10px"
+      :class="{
+        hdr_floating_btn_show: show_search_bar_help,
+        hdr_floating_btn_hidden: !show_search_bar_help,
+        hdr_floating_btn_expand: show_search_bar_help
+      }"
+      @click="help_lang = !help_lang"
+    >
+      <span v-if="!help_lang" class="hdr_floating_btn"
+        >接受的 Youtube 頻道格式: https://www.youtube.com/@GawrGura <br />
+        GawrGura<br />
+        https://www.youtube.com/channel/UCoSrY_IQQVpmIRZ9Xf-y93g <br /><br />
+        接受的 Twitch 頻道格式:<br />
+        https://www.twitch.tv/restiafps <br />
+        restiafps <br /><br />
+        可以用側邊欄產生的行事曆網址一次匯入所有頻道:<br />
+        https://li.paddycup1.idv.tw/cal?yt-ch=...&tw-ch=...<br /><br />
+        Click for English / 點擊以顯示英文</span
+      >
+      <span v-if="help_lang" class="hdr_floating_btn"
+        >To add youtube channel: https://www.youtube.com/@GawrGura <br />
+        GawrGura<br />
+        https://www.youtube.com/channel/UCoSrY_IQQVpmIRZ9Xf-y93g <br /><br />
+        To add twitch channel:<br />
+        https://www.twitch.tv/restiafps <br />
+        restiafps <br /><br />
+        To import list, copy calendar url produced by this tool:<br />
+        https://li.paddycup1.idv.tw/cal?yt-ch=...&tw-ch=...<br /><br />
+        Click for Chinese / 點擊以顯示中文</span
+      >
     </div>
   </div>
   <h2>
