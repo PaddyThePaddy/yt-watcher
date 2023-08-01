@@ -414,11 +414,6 @@ function search_bar_changed() {
   yt_channel_state.value = 'none'
   tw_channel_state.value = 'none'
 }
-function search_bar_keypress(event: KeyboardEvent) {
-  if (event.key == 'Escape') {
-    search_bar_val.value = ''
-  }
-}
 document.getElementById('body')!.addEventListener('mousemove', utils.on_mouse_move)
 document.getElementById('body')!.addEventListener('mousedown', utils.on_mouse_move)
 
@@ -448,6 +443,11 @@ document.getElementById('body')?.addEventListener('keyup', (event) => {
   if (event.key == 's' || event.key == 'S') {
     document.getElementById('search_bar')?.focus()
   }
+  if (event.key == 'Escape') {
+    search_bar_val.value = ''
+    yt_channel_state.value = 'none'
+    tw_channel_state.value = 'none'
+  }
 })
 
 update_video_events()
@@ -476,7 +476,6 @@ update_video_events()
       @focus="search_bar_focused"
       @focusout="search_bar_unfocused"
       @keyup="search_bar_changed"
-      @keydown="search_bar_keypress"
     />
   </div>
   <div class="header">
