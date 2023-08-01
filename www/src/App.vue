@@ -407,10 +407,6 @@ update_video_events()
   <div id="menu_content" :style="sidebar_reactive_style">
     <SideBar
       v-bind="side_bar_props"
-      @load-youtube="load_youtube"
-      @follow-youtube="follow_youtube"
-      @load-twitch="load_twitch"
-      @follow-twitch="follow_twitch"
       @set_sync_key="set_sync_key"
       @unfollow_tw_ch="unfollow_tw_ch"
       @unfollow_yt_ch="unfollow_yt_ch"

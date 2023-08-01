@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, ref, type StyleValue, type ComputedRef } from 'vue'
 import * as utils from '../utils'
-const emit = defineEmits(['show_popup', 'update_video_list', 'set_sync_key', 'clear_ch_preview'])
+const emit = defineEmits(['show_popup', 'update_video_list', 'set_sync_key'])
 
 const prop = defineProps({
   yt_thumbnail: String,
@@ -22,7 +22,6 @@ const prop = defineProps({
     required: true
   }
 })
-const channel_input = ref('')
 const alarm_enabled = ref(false)
 const sync_key = ref(prop.sync_key)
 const sync_key_class: ComputedRef<StyleValue> = computed(() => {
@@ -90,85 +89,9 @@ function push_sync_key() {
     utils.push_sync_key(sync_key.value, prop.sub_yt_channels, prop.sub_tw_channels)
   }
 }
-
-function clear_ch() {
-  emit('clear_ch_preview')
-  channel_input.value = ''
-}
 </script>
 <template>
   <div id="menu_header"></div>
-  <!--<input
-    type="text"
-    placeholder="new channel url"
-    v-model="channel_input"
-    title="
-  To add youtube channel:
-  https://www.youtube.com/@GawrGura
-  GawrGura
-  https://www.youtube.com/channel/UCoSrY_IQQVpmIRZ9Xf-y93g
-
-  To add twitch channel:
-  https://www.twitch.tv/restiafps
-  restiafps
-
-  To import list, copy calendar url produced by this tool:
-  https://li.paddycup1.idv.tw/cal?yt-ch=...&tw-ch=...
-  "
-  />
-  <br />
-  <button @click="clear_ch">Clear</button>
-  <button @click="$emit('import_list', channel_input)">Import list</button>
-  <button
-    @click="utils.notice_yt_video(channel_input)"
-    title="Some youtube waiting room started too long ago might not able to be noticed by the server.
-  Input the video url and press this button to let the server check it at the next update cycle"
-  >
-    Notice
-  </button>
-  <br />
-  <button
-    :hidden="prop.yt_handle != undefined && prop.yt_handle.length != 0"
-    @click="$emit('load-youtube', channel_input)"
-  >
-    Check Youtube
-  </button>
-  <button
-    :hidden="prop.yt_handle == undefined || prop.yt_handle.length == 0"
-    @click="$emit('follow-youtube')"
-  >
-    Follow Youtube
-  </button>
-  <br />
-  <div id="yt_channel_preview" v-if="prop.yt_handle != null && prop.yt_handle.length != 0">
-    <img :src="prop.yt_thumbnail" class="channel_icon" />
-    <br />
-    <span class="channel_handle">{{ prop.yt_handle }}</span>
-    <br />
-    <span class="chanel_display_name">{{ prop.yt_display_name }}</span>
-  </div>
-  <button
-    :hidden="prop.tw_handle != undefined && prop.tw_handle.length != 0"
-    @click="$emit('load-twitch', channel_input)"
-  >
-    Check Twitch
-  </button>
-  <button
-    :hidden="prop.tw_handle == undefined || prop.tw_handle.length == 0"
-    @click="$emit('follow-twitch')"
-  >
-    Follow Twitch
-  </button>
-  <br />
-  <div id="tw_channel_preview" v-if="prop.tw_handle != null && prop.tw_handle.length != 0">
-    <img :src="prop.tw_thumbnail" class="channel_icon" />
-    <br />
-    <span class="channel_handle">{{ prop.tw_handle }}</span>
-    <br />
-    <span class="chanel_display_name">{{ prop.tw_display_name }}</span>
-  </div>
-  <br />
--->
   <div>
     <b style="margin: 5px; display: block">Sync Key</b>
     <input
