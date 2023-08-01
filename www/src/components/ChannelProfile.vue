@@ -12,7 +12,7 @@ const prop = defineProps({
 </script>
 
 <template>
-  <div v-if="prop.state != 'none'">
+  <div v-if="prop.state != 'none'" style="padding: 10px">
     <div v-if="prop.state == 'loading'">
       <div class="lds-ring">
         <div></div>

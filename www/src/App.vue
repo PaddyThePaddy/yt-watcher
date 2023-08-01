@@ -376,6 +376,10 @@ function search_bar_unfocused() {
   }
   search_bar.style.width = '5em'
 }
+function search_bar_changed() {
+  yt_channel_state.value = 'none'
+  tw_channel_state.value = 'none'
+}
 
 update_video_events()
 </script>
@@ -405,6 +409,7 @@ update_video_events()
       id="search_bar"
       @focus="search_bar_focused"
       @focusout="search_bar_unfocused"
+      @keyup="search_bar_changed"
     />
   </div>
   <div class="header">
@@ -686,6 +691,9 @@ div.hdr_floating_btn_show {
 div.hdr_floating_btn_hidden {
   max-width: 0;
   transition: max-width 0.5s;
+  visibility: hidden;
+  user-select: none;
+  pointer-events: none;
 }
 
 div.hdr_floating_btn_expand {
@@ -695,6 +703,10 @@ div.hdr_floating_btn_expand {
 span.hdr_floating_btn {
   vertical-align: middle;
   height: 2em;
+}
+
+div.hdr_floating_btn:hover {
+  filter: brightness(1.2);
 }
 
 @media (pointer: none), (pointer: coarse) {
