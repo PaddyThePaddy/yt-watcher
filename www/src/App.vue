@@ -377,7 +377,7 @@ function search_bar_focused() {
   if (refresh_btn == null || search_bar == null) {
     return
   }
-  const search_bar_left = refresh_btn.offsetLeft + refresh_btn.offsetWidth + 20
+  const search_bar_left = refresh_btn.offsetLeft + refresh_btn.offsetWidth + 40
   const width = window.innerWidth - search_bar_left * 2
   search_bar.style.width = width + 'px'
   is_search_bar_focused.value = true
@@ -538,7 +538,8 @@ update_video_events()
       @click="help_lang = !help_lang"
     >
       <span v-if="!help_lang" class="hdr_floating_btn"
-        >接受的 Youtube 頻道格式: https://www.youtube.com/@GawrGura <br />
+        >接受的 Youtube 頻道格式:<br />
+        https://www.youtube.com/@GawrGura <br />
         GawrGura<br />
         https://www.youtube.com/channel/UCoSrY_IQQVpmIRZ9Xf-y93g <br /><br />
         接受的 Twitch 頻道格式:<br />
