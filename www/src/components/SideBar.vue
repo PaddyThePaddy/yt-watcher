@@ -193,7 +193,7 @@ input {
 }
 
 input.error {
-  border: solid red 3px;
+  outline: red solid 3px;
 }
 
 label {
