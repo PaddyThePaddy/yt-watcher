@@ -353,7 +353,6 @@ const is_twitch_channel_url: ComputedRef<boolean> = computed(() =>
 const IMPORT_URL_PATTERN = new RegExp(
   utils.site_url.replace(utils.REGEXP_SPECIAL_CHAR, '\\$&') + 'cal?'
 )
-console.log(utils.site_url.replace(utils.REGEXP_SPECIAL_CHAR, '\\$&') + 'cal?')
 const is_import_url: ComputedRef<boolean> = computed(() =>
   IMPORT_URL_PATTERN.test(search_bar_val.value)
 )
@@ -380,8 +379,11 @@ function search_bar_changed() {
   yt_channel_state.value = 'none'
   tw_channel_state.value = 'none'
 }
-
-update_video_events()
+function search_bar_keypress(event: KeyboardEvent) {
+  if (event.key == 'Escape') {
+    search_bar_val.value = ''
+  }
+}
 </script>
 
 <template>
@@ -410,6 +412,7 @@ update_video_events()
       @focus="search_bar_focused"
       @focusout="search_bar_unfocused"
       @keyup="search_bar_changed"
+      @keydown="search_bar_keypress"
     />
   </div>
   <div class="header">
