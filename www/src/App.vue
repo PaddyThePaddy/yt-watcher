@@ -358,6 +358,25 @@ const is_import_url: ComputedRef<boolean> = computed(() =>
   IMPORT_URL_PATTERN.test(search_bar_val.value)
 )
 
+function search_bar_focused() {
+  const refresh_btn = document.getElementById('refresh_btn')
+  const search_bar = document.getElementById('search_bar')
+  if (refresh_btn == null || search_bar == null) {
+    return
+  }
+  const search_bar_left = refresh_btn.offsetLeft + refresh_btn.offsetWidth + 10
+  const width = window.innerWidth - search_bar_left * 2
+  search_bar.style.width = width + 'px'
+}
+
+function search_bar_unfocused() {
+  const search_bar = document.getElementById('search_bar')
+  if (search_bar == null) {
+    return
+  }
+  search_bar.style.width = '5em'
+}
+
 update_video_events()
 </script>
 
@@ -378,6 +397,16 @@ update_video_events()
       @pull_sync_key="pull_sync_key"
     ></SideBar>
   </div>
+  <div class="header" style="background-color: #555; justify-content: center">
+    <input
+      type="text"
+      v-model="search_bar_val"
+      placeholder="Search"
+      id="search_bar"
+      @focus="search_bar_focused"
+      @focusout="search_bar_unfocused"
+    />
+  </div>
   <div class="header">
     <div class="header_btn">
       <input type="checkbox" id="menu_control" hidden="true" v-model="sidebar_control" />
@@ -385,12 +414,11 @@ update_video_events()
         <img class="floating_btn_icon" src="/icons8-menu.svg" />
       </label>
     </div>
-    <div class="header_btn" @click="update_video_events">
+    <div id="refresh_btn" class="header_btn" @click="update_video_events">
       <label style="display: flex">
         <img class="floating_btn_icon" src="/icons8-refresh.svg" />
       </label>
     </div>
-    <input type="text" v-model="search_bar_val" placeholder="Search" id="search_bar" />
   </div>
   <div class="header_floating_area">
     <div
@@ -595,7 +623,6 @@ input.error {
 div.header {
   height: 2em;
   width: 100%;
-  background-color: #555;
   position: fixed;
   top: 0;
   left: 0;
@@ -603,24 +630,30 @@ div.header {
   padding-bottom: 10px;
   z-index: 3;
   display: flex;
+  user-select: none;
+  pointer-events: none;
+}
+
+div.header > * {
+  pointer-events: all;
 }
 
 input#search_bar {
   margin-left: 1em;
   width: 5em;
-  transition: flex 0.2s;
+  transition: width 0.2s;
   border-radius: 2em;
   padding-top: 2px;
   padding-bottom: 2px;
   padding-left: 1em;
   flex: 0 1 auto;
-  max-width: 73%;
   border-style: none;
+  pointer-events: all;
 }
 
-input#search_bar:focus {
-  flex: 2 0 auto;
-}
+/* input#search_bar:focus { */
+/* flex: 2 0 auto; */
+/* } */
 
 div.header_floating_area {
   width: 100%;
