@@ -334,13 +334,14 @@ function import_list(list: string) {
   })
 }
 
-const YT_VIDEO_PATTERN = /^([\w\d_-]+|https:\/\/www.youtube.com\/watch\\?.*v=[\w\d_-]+.*)$/
+const YT_VIDEO_PATTERN =
+  /^([\w\d_-]+|https:\/\/www.youtube.com\/watch\\?.*v=[\w\d_-]+.*|https:\/\/youtu.be\/[\w\d_-]+)$/
 const is_youtube_video_url: ComputedRef<boolean> = computed(() =>
   YT_VIDEO_PATTERN.test(search_bar_val.value)
 )
 
 const YT_CHANNEL_PATTERN =
-  /^([\w\d_-]+|https:\/\/www.youtube.com\/@[\w\d_-]+|https:\/\/www.youtube.com\/channel\/[\w\d_-]+)$/
+  /^([\w\d_-]+|https:\/\/(www.)?youtube.com\/@[\w\d_-]+|https:\/\/www.youtube.com\/channel\/[\w\d_-]+)$/
 const is_youtube_channel_url: ComputedRef<boolean> = computed(() =>
   YT_CHANNEL_PATTERN.test(search_bar_val.value)
 )

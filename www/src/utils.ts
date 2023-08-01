@@ -201,7 +201,9 @@ export function pull_sync_key(sync_key: string): Promise<{ yt_ch: string[]; tw_c
 }
 
 export function notice_yt_video(value: string) {
-  const url_pattern = new RegExp('https://www.youtube.com/watch\\?.*v=([\\w\\d_-]+)')
+  const url_pattern = new RegExp(
+    '(?:https://www.youtube.com/watch\\?.*v=|https://youtu.be/)([\\w\\d_-]+)'
+  )
   const id_list = []
   for (const s of value.split(',')) {
     const match = url_pattern.exec(s)
