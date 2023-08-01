@@ -793,7 +793,7 @@ div#cancel_btn {
 }
 
 div#cancel_btn.show {
-  translate: -5px 0;
+  translate: -2em 0;
 }
 
 @media (pointer: none), (pointer: coarse) {
