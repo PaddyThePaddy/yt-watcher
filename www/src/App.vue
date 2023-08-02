@@ -96,15 +96,7 @@ const tw_channel_data: Ref<{
   profile_img: '',
   error_msg: ''
 })
-const popup_msg = ref('')
-const popup_start_time: Ref<null | number> = ref(null)
-const display_popup = computed(() => {
-  if (popup_start_time.value == null) {
-    return false
-  }
-  return current_time.value.getTime() - popup_start_time.value < 2000
-})
-
+const popup_msgs: Ref<{ msg: string; time: number }[]> = ref([])
 setInterval(
   () => {
     update_video_events()
@@ -113,7 +105,15 @@ setInterval(
 )
 setInterval(() => {
   current_time.value = new Date()
-}, 1000)
+}, 50)
+
+setInterval(() => {
+  for (let i = popup_msgs.value.length - 1; i >= 0; i--) {
+    if (current_time.value.getTime() - popup_msgs.value[i].time > 5000) {
+      popup_msgs.value.splice(i, 1)
+    }
+  }
+}, 100000)
 
 side_bar_props.value.sub_tw_channels.sort()
 side_bar_props.value.sub_yt_channels.sort()
@@ -433,14 +433,7 @@ function notice_yt_video() {
 }
 
 function show_popup(msg: string) {
-  const popup_ele = document.getElementById('popup')
-  if (popup_ele == null) {
-    return
-  }
-  popup_ele.style.top = utils.mouse_pos.y + 5 + 'px'
-  popup_ele.style.left = utils.mouse_pos.x + 5 + 'px'
-  popup_start_time.value = current_time.value.getTime()
-  popup_msg.value = msg
+  popup_msgs.value.push({ msg: msg, time: Date.now() })
 }
 
 document.getElementById('body')?.addEventListener('keyup', (event) => {
@@ -495,7 +488,12 @@ update_video_events()
     <div
       id="refresh_btn"
       class="header_btn"
-      @click="update_video_events().then(() => show_popup('Refreshed'))"
+      @click="
+        update_video_events().then(
+          () => show_popup('Refreshed'),
+          (msg) => show_popup(msg)
+        )
+      "
     >
       <label style="display: flex">
         <img class="floating_btn_icon" src="/icons8-refresh.svg" />
@@ -683,7 +681,17 @@ update_video_events()
     v-if="sidebar_control"
     @click="sidebar_control = !sidebar_control"
   ></div>
-  <div id="popup" :class="{ popup_show: display_popup }">{{ popup_msg }}</div>
+  <div id="popup_area">
+    <div
+      v-for="(item, idx) in popup_msgs"
+      :key="idx"
+      class="popup_msg"
+      @click="item.time -= 2000"
+      :class="{ fade_out: current_time.getTime() - item.time > 2000 }"
+    >
+      {{ item.msg }}
+    </div>
+  </div>
 </template>
 
 <style scoped>
@@ -863,19 +871,37 @@ div#cancel_btn.show {
   translate: -2em 0;
 }
 
-div#popup {
-  opacity: 0;
-  transition: opacity 0.2s;
+div#popup_area {
   pointer-events: none;
-  background-color: rgb(90, 90, 241);
-  position: absolute;
-  padding: 10px;
-  border-radius: 8px;
+  position: fixed;
+  bottom: 0px;
+  top: auto;
+  right: 75%;
+  left: 25%;
+  width: 50%;
   z-index: 4;
 }
 
-div#popup.popup_show {
+div.popup_msg {
   opacity: 1;
+  transition: opacity 0.2s;
+  background-color: rgb(90, 90, 241);
+  padding: 10px;
+  border-radius: 8px;
+  margin: 5px;
+  pointer-events: all;
+  text-align: center;
+  width: auto;
+}
+div.popup_msg:hover {
+  background-color: rgb(142, 142, 253);
+}
+div.popup_msg:active {
+  background-color: rgb(142, 142, 253);
+}
+
+div.popup_msg.fade_out {
+  opacity: 0;
 }
 
 @media (pointer: none), (pointer: coarse) {
@@ -913,6 +939,15 @@ div#popup.popup_show {
   }
   div.hdr_floating_btn_show {
     translate: 0 -3.5em;
+  }
+
+  div#popup_area {
+    bottom: auto;
+    top: 0px;
+    transform: rotate(180deg);
+  }
+  div.popup_msg {
+    transform: rotate(-180deg);
   }
 }
 </style>

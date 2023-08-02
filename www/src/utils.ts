@@ -144,8 +144,8 @@ export function get_video_data(
   tw_ch_list: string[]
 ): Promise<UpcomingEvent[]> {
   if (yt_ch_list.length == 0 && tw_ch_list.length == 0) {
-    return new Promise((resolve) => {
-      resolve([])
+    return new Promise((_, reject) => {
+      reject('No tracking channel')
     })
   }
   let url = site_url + 'data?'

@@ -34,6 +34,7 @@ const is_sync_key_valid = computed(() => {
 function copy_calendar_url() {
   if (prop.sub_yt_channels.length == 0 && prop.sub_tw_channels.length == 0) {
     console.log('No id for calendar to copy')
+    emit('show_popup', 'No id for calendar to copy')
     return
   }
   let url = utils.site_url + 'cal?'
@@ -58,6 +59,7 @@ function copy_calendar_url() {
 function copy_synced_calendar_url() {
   if (prop.sync_key == null || prop.sync_key.length == 0 || !utils.verify_sync_key(prop.sync_key)) {
     console.log('invalid sync key')
+    emit('show_popup', 'Invalid sync key')
     return
   }
   let url = utils.site_url + 'cal?key=' + prop.sync_key
