@@ -9,11 +9,24 @@ self.addEventListener('install', function (e) {
 })
 
 self.addEventListener('fetch', function (event) {
-  console.log(event.request.url)
-
-  event.respondWith(
-    caches.match(event.request).then(function (response) {
-      return response || fetch(event.request)
-    })
-  )
+  if (event.request.url.startsWith(self.origin)) {
+    fetch(event.request.url).then(
+      (resp) => {
+        return resp
+      },
+      () => {
+        event.respondWith(
+          caches.match(event.request).then(function (response) {
+            return response
+          })
+        )
+      }
+    )
+  } else {
+    event.respondWith(
+      caches.match(event.request).then(function (response) {
+        return response || fetch(event.request)
+      })
+    )
+  }
 })
