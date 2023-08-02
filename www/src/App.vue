@@ -446,6 +446,7 @@ function search_bar_unfocused() {
 function search_bar_changed() {
   yt_channel_state.value = 'none'
   tw_channel_state.value = 'none'
+  to_top()
 }
 document.getElementById('body')!.addEventListener('mousemove', utils.on_mouse_move)
 document.getElementById('body')!.addEventListener('mousedown', utils.on_mouse_move)
@@ -463,6 +464,11 @@ function notice_yt_video() {
 
 function show_popup(msg: string) {
   popup_msgs.value.push({ msg: msg, time: Date.now() })
+}
+
+function to_top() {
+  console.log('totop')
+  window.scroll(0, 0)
 }
 
 document.getElementById('body')?.addEventListener('keyup', (event) => {
@@ -510,7 +516,7 @@ update_video_events()
       autocomplete="off"
     />
   </div>
-  <div class="header">
+  <div class="header" @click="to_top">
     <div class="header_btn">
       <input type="checkbox" id="menu_control" hidden="true" v-model="sidebar_control" />
       <label for="menu_control" style="display: flex">
@@ -811,12 +817,6 @@ div.header {
   padding-bottom: 10px;
   z-index: 4;
   display: flex;
-  user-select: none;
-  pointer-events: none;
-}
-
-div.header > * {
-  pointer-events: all;
 }
 
 input#search_bar {

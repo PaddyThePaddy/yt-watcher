@@ -5,6 +5,10 @@
   --menu-width: 350px;
 }
 
+html {
+  scroll-behavior: smooth;
+}
+
 body {
   overflow-x: hidden;
   font-family: 'Noto Sans TC', sans-serif;
