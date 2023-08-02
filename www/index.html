@@ -8,7 +8,9 @@
     <title>Stream Watcher</title>
     <script>
       window.addEventListener('load', () => {
+        console.log('load')
         registerSW()
+        refresh_cache()
       })
 
       // Register the Service Worker
@@ -20,6 +22,12 @@
             console.log('SW registration failed')
           }
         }
+      }
+
+      async function refresh_cache() {
+        console.log('refresh cache')
+        const registration = await navigator.serviceWorker.ready
+        await registration.sync.register('refresh_cache')
       }
     </script>
   </head>
