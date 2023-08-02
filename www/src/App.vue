@@ -454,6 +454,9 @@ document.getElementById('body')?.addEventListener('keyup', (event) => {
   }
 })
 
+utils.set_sync_key(utils.get_sync_key())
+utils.set_tw_id_list(utils.get_tw_id_list())
+utils.set_yt_id_list(utils.get_yt_id_list())
 update_video_events()
 </script>
 

@@ -37,6 +37,15 @@ export function on_mouse_move(e: MouseEvent) {
   mouse_pos.x = e.x
   mouse_pos.y = e.y
 }
+
+function set_cookie(name: string, value: string | null, max_age: number | null) {
+  let maxAge = ''
+  if (max_age) {
+    maxAge = '; max-age=' + max_age
+  }
+  document.cookie = name + '=' + (value || '') + maxAge + '; path=/'
+}
+
 export function get_yt_id_list(): string[] {
   const cookies: string[] = document.cookie.split(';')
   for (const c of cookies) {
@@ -52,7 +61,7 @@ export function get_yt_id_list(): string[] {
 }
 
 export function set_yt_id_list(id_list: string[]) {
-  document.cookie = 'yt_id_list=' + id_list.join(',')
+  set_cookie('yt_id_list', id_list.join(','), 31536000)
 }
 
 export function get_tw_id_list(): string[] {
@@ -70,7 +79,7 @@ export function get_tw_id_list(): string[] {
 }
 
 export function set_tw_id_list(id_list: string[]) {
-  document.cookie = 'tw_id_list=' + id_list.join(',')
+  set_cookie('tw_id_list', id_list.join(','), 31536000)
 }
 
 export function get_sync_key() {
@@ -85,7 +94,7 @@ export function get_sync_key() {
 }
 
 export function set_sync_key(key: string) {
-  document.cookie = 'sync_key=' + key
+  set_cookie('sync_key', key, 31536000)
 }
 
 export type ChannelInfo = {
