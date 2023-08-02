@@ -504,7 +504,11 @@ update_video_events()
       @show_popup="show_popup"
     ></SideBar>
   </div>
-  <div class="header" style="background-color: #555; justify-content: center">
+  <div
+    class="header"
+    style="background-color: #555; justify-content: center; pointer-events: all"
+    @click="to_top"
+  >
     <input
       type="text"
       v-model="search_bar_val"
@@ -516,7 +520,7 @@ update_video_events()
       autocomplete="off"
     />
   </div>
-  <div class="header" @click="to_top">
+  <div class="header">
     <div class="header_btn">
       <input type="checkbox" id="menu_control" hidden="true" v-model="sidebar_control" />
       <label for="menu_control" style="display: flex">
@@ -785,6 +789,7 @@ div.header_btn {
   border: solid 2px slategray;
   margin-left: 7px;
   aspect-ratio: 1 /1;
+  pointer-events: all;
 }
 
 div.header_btn:hover {
@@ -817,6 +822,7 @@ div.header {
   padding-bottom: 10px;
   z-index: 4;
   display: flex;
+  pointer-events: none;
 }
 
 input#search_bar {
@@ -828,6 +834,7 @@ input#search_bar {
   padding-left: 1em;
   border-style: none;
   pointer-events: all;
+  z-index: 5;
 }
 
 div#search_bar_container {
@@ -962,6 +969,7 @@ div.popup_msg.fade_out {
   div.header {
     top: auto;
     bottom: 0px;
+    pointer-events: none;
   }
 
   div.header_floating_area {
