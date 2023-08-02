@@ -195,7 +195,7 @@ function update_video_events() {
   const new_starting_videos: VideoEvent[] = []
   const new_upcoming_videos: VideoEvent[] = []
   console.log('Updating video list')
-  utils
+  return utils
     .get_video_data(side_bar_props.value.sub_yt_channels, side_bar_props.value.sub_tw_channels)
     .then((data: utils.UpcomingEvent[]) => {
       const now = new Date()
@@ -492,7 +492,11 @@ update_video_events()
         <img class="floating_btn_icon" src="/icons8-menu.svg" />
       </label>
     </div>
-    <div id="refresh_btn" class="header_btn" @click="update_video_events">
+    <div
+      id="refresh_btn"
+      class="header_btn"
+      @click="update_video_events().then(() => show_popup('Refreshed'))"
+    >
       <label style="display: flex">
         <img class="floating_btn_icon" src="/icons8-refresh.svg" />
       </label>
