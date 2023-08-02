@@ -981,5 +981,9 @@ div.popup_msg.fade_out {
   div.popup_msg {
     transform: rotate(-180deg);
   }
+
+  div.header {
+    height: 2.5em;
+  }
 }
 </style>
