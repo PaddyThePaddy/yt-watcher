@@ -113,7 +113,7 @@ setInterval(() => {
       popup_msgs.value.splice(i, 1)
     }
   }
-}, 100000)
+}, 1000)
 
 side_bar_props.value.sub_tw_channels.sort()
 side_bar_props.value.sub_yt_channels.sort()
