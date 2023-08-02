@@ -993,5 +993,8 @@ div.popup_msg.fade_out {
   div.header {
     height: 2.5em;
   }
+  span.hdr_floating_btn {
+    height: 2.5em;
+  }
 }
 </style>
