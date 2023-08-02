@@ -118,6 +118,35 @@ setInterval(() => {
 side_bar_props.value.sub_tw_channels.sort()
 side_bar_props.value.sub_yt_channels.sort()
 
+let touch_start_pos: null | { x: number; y: number } = null
+
+function touch_start(event: TouchEvent) {
+  touch_start_pos = { x: event.touches[0].clientX, y: event.touches[0].clientY }
+}
+
+function touch_move(event: TouchEvent) {
+  if (touch_start_pos == null) {
+    return
+  }
+
+  const current = { x: event.touches[0].clientX, y: event.touches[0].clientY }
+  const diff_x = touch_start_pos.x - current.x
+  const diff_y = touch_start_pos.y - current.y
+
+  if (Math.abs(diff_x) > Math.abs(diff_y)) {
+    if (diff_x > 150) {
+      sidebar_control.value = false
+      touch_start_pos = null
+    } else if (diff_x < -150) {
+      sidebar_control.value = true
+      touch_start_pos = null
+    }
+  } else {
+    if (Math.abs(diff_y) > 150) {
+      touch_start_pos = null
+    }
+  }
+}
 function load_youtube(query: string) {
   yt_channel_state.value = 'loading'
   utils.load_youtube_channel(query).then(
@@ -446,6 +475,8 @@ document.getElementById('body')?.addEventListener('keyup', (event) => {
     tw_channel_state.value = 'none'
   }
 })
+document.getElementById('body')?.addEventListener('touchstart', touch_start, false)
+document.getElementById('body')?.addEventListener('touchmove', touch_move, false)
 
 utils.set_sync_key(utils.get_sync_key())
 utils.set_tw_id_list(utils.get_tw_id_list())
