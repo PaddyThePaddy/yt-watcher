@@ -507,6 +507,7 @@ update_video_events()
       @focus="search_bar_focused"
       @focusout="search_bar_unfocused"
       @keyup="search_bar_changed"
+      autocomplete="off"
     />
   </div>
   <div class="header">
