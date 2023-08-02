@@ -4,6 +4,8 @@ fn main() {
     let pwd = std::env::current_dir().unwrap();
     if std::env::consts::OS == "windows" {
         println!("cargo:rerun-if-changed=www\\src");
+        println!("cargo:rerun-if-changed=www\\public");
+        println!("cargo:rerun-if-changed=www\\index.html");
         assert!(std::process::Command::new("npm.cmd")
             .arg("install")
             .current_dir(pwd.join("www/"))
@@ -19,6 +21,8 @@ fn main() {
             .success());
     } else {
         println!("cargo:rerun-if-changed=www/src");
+        println!("cargo:rerun-if-changed=www/dist");
+        println!("cargo:rerun-if-changed=www/index.html");
         assert!(std::process::Command::new("npm")
             .arg("install")
             .current_dir(pwd.join("www/"))
