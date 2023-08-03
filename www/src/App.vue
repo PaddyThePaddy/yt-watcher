@@ -29,6 +29,36 @@ let side_bar_props = ref({
   sub_yt_channels: utils.get_yt_id_list(),
   sub_tw_channels: utils.get_tw_id_list()
 })
+
+const ch_help = `在搜尋框輸入以下內容<br /><br />
+        接受的 Youtube 頻道格式:<br />
+        https://www.youtube.com/@GawrGura <br />
+        GawrGura<br />
+        https://www.youtube.com/channel/UCoSrY_IQQVpmIRZ9Xf-y93g <br /><br />
+        接受的 Twitch 頻道格式:<br />
+        https://www.twitch.tv/restiafps <br />
+        restiafps <br /><br />
+        可以用側邊欄產生的行事曆網址一次匯入所有頻道:<br />
+        ${utils.site_url}cal?yt-ch=...&tw-ch=...<br /><br />
+        讓 server "注意"到非公開 / 過於老舊的直播待機室:<br />
+        https://www.youtube.com/watch?v=k7dTnCl2pVA<br />
+        k7dTnCl2pVA<br />
+        https://youtu.be/k7dTnCl2pVA<br /><br />
+        Click for English / 點擊以顯示英文`
+const en_help = `To add youtube channel: <br />
+        https://www.youtube.com/@GawrGura <br />
+        GawrGura<br />
+        https://www.youtube.com/channel/UCoSrY_IQQVpmIRZ9Xf-y93g <br /><br />
+        To add twitch channel:<br />
+        https://www.twitch.tv/restiafps <br />
+        restiafps <br /><br />
+        To import list, copy calendar url produced by this tool:<br />
+        ${utils.site_url}cal?yt-ch=...&tw-ch=...<br /><br />
+        To let the server "notice" a unlisted / old waiting room:<br />
+        https://www.youtube.com/watch?v=k7dTnCl2pVA<br />
+        k7dTnCl2pVA<br />
+        https://youtu.be/k7dTnCl2pVA<br /><br />
+        Click for Chinese / 點擊以顯示中文`
 let upcoming_videos: Ref<VideoEvent[]> = ref([])
 let filtered_upcoming_videos: ComputedRef<VideoEvent[]> = computed(() => {
   return upcoming_videos.value.filter(
@@ -654,89 +684,69 @@ update_video_events()
       }"
       @click="help_lang = !help_lang"
     >
-      <span v-if="!help_lang" class="hdr_floating_btn"
-        >接受的 Youtube 頻道格式:<br />
-        https://www.youtube.com/@GawrGura <br />
-        GawrGura<br />
-        https://www.youtube.com/channel/UCoSrY_IQQVpmIRZ9Xf-y93g <br /><br />
-        接受的 Twitch 頻道格式:<br />
-        https://www.twitch.tv/restiafps <br />
-        restiafps <br /><br />
-        可以用側邊欄產生的行事曆網址一次匯入所有頻道:<br />
-        https://li.paddycup1.idv.tw/cal?yt-ch=...&tw-ch=...<br /><br />
-        讓 server "注意"到非公開 / 過於老舊的直播待機室:<br />
-        https://www.youtube.com/watch?v=k7dTnCl2pVA<br />
-        k7dTnCl2pVA<br />
-        https://youtu.be/k7dTnCl2pVA<br /><br />
-        Click for English / 點擊以顯示英文</span
-      >
-      <span v-if="help_lang" class="hdr_floating_btn"
-        >To add youtube channel: <br />
-        https://www.youtube.com/@GawrGura <br />
-        GawrGura<br />
-        https://www.youtube.com/channel/UCoSrY_IQQVpmIRZ9Xf-y93g <br /><br />
-        To add twitch channel:<br />
-        https://www.twitch.tv/restiafps <br />
-        restiafps <br /><br />
-        To import list, copy calendar url produced by this tool:<br />
-        https://li.paddycup1.idv.tw/cal?yt-ch=...&tw-ch=...<br /><br />
-        To let the server "notice" a unlisted / old waiting room:<br />
-        https://www.youtube.com/watch?v=k7dTnCl2pVA<br />
-        k7dTnCl2pVA<br />
-        https://youtu.be/k7dTnCl2pVA<br /><br />
-        Click for Chinese / 點擊以顯示中文</span
-      >
+      <span v-if="help_lang" class="hdr_floating_btn" v-html="en_help"></span>
+      <span v-else class="hdr_floating_btn" v-html="ch_help"></span>
     </div>
   </div>
-  <h2>
-    Ongoing (<span v-if="ongoing_videos.length == filtered_ongoing_videos.length">{{
-      ongoing_videos.length
-    }}</span
-    ><span v-if="ongoing_videos.length != filtered_ongoing_videos.length"
-      >{{ filtered_ongoing_videos.length }} / {{ ongoing_videos.length }}</span
-    >)
-  </h2>
-  <div class="video_container">
-    <VideoComponent
-      v-for="(video, index) in filtered_ongoing_videos"
-      v-bind="video"
-      :current_time="current_time"
-      v-bind:key="index"
-    ></VideoComponent>
+  <div
+    v-if="utils.get_tw_id_list().length == 0 && utils.get_yt_id_list().length == 0"
+    @click="help_lang = !help_lang"
+    style="display: flex; justify-content: center; height: 100vh; align-items: center"
+  >
+    <span v-if="help_lang" v-html="en_help"></span>
+    <span v-else v-html="ch_help"></span>
   </div>
+  <div v-else>
+    <h2>
+      Ongoing (<span v-if="ongoing_videos.length == filtered_ongoing_videos.length">{{
+        ongoing_videos.length
+      }}</span
+      ><span v-if="ongoing_videos.length != filtered_ongoing_videos.length"
+        >{{ filtered_ongoing_videos.length }} / {{ ongoing_videos.length }}</span
+      >)
+    </h2>
+    <div class="video_container">
+      <VideoComponent
+        v-for="(video, index) in filtered_ongoing_videos"
+        v-bind="video"
+        :current_time="current_time"
+        v-bind:key="index"
+      ></VideoComponent>
+    </div>
 
-  <h2 v-if="starting_videos.length != 0">
-    Starting (<span v-if="starting_videos.length == filtered_starting_videos.length">{{
-      starting_videos.length
-    }}</span
-    ><span v-if="starting_videos.length != filtered_starting_videos.length"
-      >{{ filtered_starting_videos.length }} / {{ starting_videos.length }}</span
-    >)
-  </h2>
-  <div class="video_container" v-if="starting_videos.length != 0">
-    <VideoComponent
-      v-for="(video, index) in filtered_starting_videos"
-      v-bind="video"
-      :current_time="current_time"
-      v-bind:key="index"
-    ></VideoComponent>
-  </div>
+    <h2 v-if="starting_videos.length != 0">
+      Starting (<span v-if="starting_videos.length == filtered_starting_videos.length">{{
+        starting_videos.length
+      }}</span
+      ><span v-if="starting_videos.length != filtered_starting_videos.length"
+        >{{ filtered_starting_videos.length }} / {{ starting_videos.length }}</span
+      >)
+    </h2>
+    <div class="video_container" v-if="starting_videos.length != 0">
+      <VideoComponent
+        v-for="(video, index) in filtered_starting_videos"
+        v-bind="video"
+        :current_time="current_time"
+        v-bind:key="index"
+      ></VideoComponent>
+    </div>
 
-  <h2>
-    Upcoming (<span v-if="upcoming_videos.length == filtered_upcoming_videos.length">{{
-      upcoming_videos.length
-    }}</span
-    ><span v-if="upcoming_videos.length != filtered_upcoming_videos.length"
-      >{{ filtered_upcoming_videos.length }} / {{ upcoming_videos.length }}</span
-    >)
-  </h2>
-  <div class="video_container">
-    <VideoComponent
-      v-for="(video, index) in filtered_upcoming_videos"
-      v-bind="video"
-      :current_time="current_time"
-      v-bind:key="index"
-    ></VideoComponent>
+    <h2>
+      Upcoming (<span v-if="upcoming_videos.length == filtered_upcoming_videos.length">{{
+        upcoming_videos.length
+      }}</span
+      ><span v-if="upcoming_videos.length != filtered_upcoming_videos.length"
+        >{{ filtered_upcoming_videos.length }} / {{ upcoming_videos.length }}</span
+      >)
+    </h2>
+    <div class="video_container">
+      <VideoComponent
+        v-for="(video, index) in filtered_upcoming_videos"
+        v-bind="video"
+        :current_time="current_time"
+        v-bind:key="index"
+      ></VideoComponent>
+    </div>
   </div>
   <div id="footer"></div>
   <div
