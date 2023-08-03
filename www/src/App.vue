@@ -487,6 +487,7 @@ document.getElementById('body')?.addEventListener('keyup', (event) => {
     search_bar_val.value = ''
     yt_channel_state.value = 'none'
     tw_channel_state.value = 'none'
+    to_top()
   }
 })
 document.getElementById('body')?.addEventListener('touchstart', touch_start, false)
@@ -558,7 +559,7 @@ update_video_events()
 
       <div
         class="header_btn right"
-        @click="search_bar_val = ''"
+        @click="(search_bar_val = ''), to_top()"
         style="pointer-events: all"
         :class="{ show: search_bar_val != '' }"
       >
