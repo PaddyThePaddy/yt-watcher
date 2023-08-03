@@ -660,7 +660,8 @@ update_video_events()
         Click for English / 點擊以顯示英文</span
       >
       <span v-if="help_lang" class="hdr_floating_btn"
-        >To add youtube channel: https://www.youtube.com/@GawrGura <br />
+        >To add youtube channel: <br />
+        https://www.youtube.com/@GawrGura <br />
         GawrGura<br />
         https://www.youtube.com/channel/UCoSrY_IQQVpmIRZ9Xf-y93g <br /><br />
         To add twitch channel:<br />
