@@ -568,7 +568,7 @@ update_video_events()
       }"
     >
       <span class="hdr_floating_btn" @click="load_youtube(search_bar_val)">Search Youtube</span>
-      &nbsp;
+      <span class="hdr_floating_btn" v-if="yt_channel_state != 'none'">&nbsp;</span>
       <span
         class="hdr_floating_btn"
         v-if="yt_channel_state != 'none'"
@@ -591,7 +591,7 @@ update_video_events()
       }"
     >
       <span class="hdr_floating_btn" @click="load_twitch(search_bar_val)">Search Twitch</span>
-      &nbsp;
+      <span class="hdr_floating_btn" v-if="tw_channel_state != 'none'">&nbsp;</span>
       <span
         class="hdr_floating_btn"
         v-if="tw_channel_state != 'none'"
@@ -869,6 +869,7 @@ div.hdr_floating_btn {
   text-align: center;
   overflow: clip;
   pointer-events: all;
+  user-select: none;
 }
 
 div.hdr_floating_btn_show {
@@ -893,11 +894,11 @@ span.hdr_floating_btn {
   height: 2em;
 }
 
-div.hdr_floating_btn:hover {
+span.hdr_floating_btn:hover {
   filter: brightness(1.2);
 }
 
-div.hdr_floating_btn:active {
+span.hdr_floating_btn:active {
   filter: brightness(1.4);
 }
 
