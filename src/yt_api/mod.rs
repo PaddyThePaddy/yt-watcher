@@ -638,10 +638,22 @@ pub async fn get_video(
         .json::<MultipleItemsResponse<Video::Resource>>()
         .await
         .map_err(|e| YtApiError::DeserializeFailed(format!("{}", e.without_url())))
-        .map(|resp| PagedResponse {
-            next_page_token: resp.nextPageToken,
-            prev_page_token: resp.prevPageToken,
-            value: resp.items,
+        .map(|resp| {
+            resp.items.iter().for_each(|r| {
+                log::debug!(
+                    "{}: {}",
+                    r.id,
+                    r.snippet
+                        .as_ref()
+                        .map(|s| s.title.clone())
+                        .unwrap_or("no snippet".to_string())
+                )
+            });
+            PagedResponse {
+                next_page_token: resp.nextPageToken,
+                prev_page_token: resp.prevPageToken,
+                value: resp.items,
+            }
         })
 }
 
