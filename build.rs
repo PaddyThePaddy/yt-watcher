@@ -21,7 +21,7 @@ fn main() {
             .success());
     } else {
         println!("cargo:rerun-if-changed=www/src");
-        println!("cargo:rerun-if-changed=www/dist");
+        println!("cargo:rerun-if-changed=www/public");
         println!("cargo:rerun-if-changed=www/index.html");
         assert!(std::process::Command::new("npm")
             .arg("install")

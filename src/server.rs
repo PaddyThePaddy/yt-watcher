@@ -1021,6 +1021,7 @@ impl ServerData {
         let mut events = vec![];
         let mut unchecked_video_ids = vec![];
         let mut first_video_after_all_stream_map: HashMap<String, String> = HashMap::new();
+        self.yt_videos.dump(&mut unchecked_video_ids);
         for c in self.yt_channels.values() {
             if use_youtube_channel_api {
                 match get_playlist_items(
@@ -1038,7 +1039,9 @@ impl ServerData {
                                 if content_detail.videoId == c.first_video_after_all_stream {
                                     break;
                                 }
-                                unchecked_video_ids.push(content_detail.videoId);
+                                if !unchecked_video_ids.contains(&content_detail.videoId) {
+                                    unchecked_video_ids.push(content_detail.videoId);
+                                }
                             } else {
                                 log::error!(
                                     "Playlist item {} does not have contentDetail field",
@@ -1060,13 +1063,14 @@ impl ServerData {
                             if v == c.first_video_after_all_stream {
                                 break;
                             }
-                            unchecked_video_ids.push(v);
+                                if !unchecked_video_ids.contains(&v) {
+                                    unchecked_video_ids.push(v);
+                                }
                         }
                     }
                 }
             }
         }
-        self.yt_videos.dump(&mut unchecked_video_ids);
 
         match get_all_video_items(
             unchecked_video_ids.as_slice(),
@@ -1080,16 +1084,20 @@ impl ServerData {
                 for v in resp.iter() {
                     if let Some(snippet) = &v.snippet {
                         if !self.yt_channels.contains_key(&snippet.channelId) {
-                            log::info!("Video {} does not belongs to any tracking channel", v.id);
+                            log::debug!("Video {} does not belongs to any tracking channel", v.id);
                             continue;
                         }
                         if snippet.liveBroadcastContent == "none" {
                             if !first_video_after_all_stream_map.contains_key(&snippet.channelId) {
+                                log::debug!("Channel {}({}) does not has first video, insert {}({})", snippet.channelTitle, snippet.channelId, snippet.title, v.id);
                                 first_video_after_all_stream_map
                                     .insert(snippet.channelId.clone(), v.id.clone());
+                            } else {
+                                log::debug!("Channel {}({}) alread has first video. Skippet video {}({})", snippet.channelTitle, snippet.channelId, snippet.title, v.id);
                             }
                         } else {
                             first_video_after_all_stream_map.remove(&snippet.channelId);
+                            log::debug!("Remove first video of channel {}({}). Because found new live stream {}({})", snippet.channelTitle, snippet.channelId, snippet.title, v.id);
                         }
                     }
                     match UpcomingEvent::try_from((v, &*self)) {
