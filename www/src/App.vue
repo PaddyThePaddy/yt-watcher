@@ -113,7 +113,7 @@ setInterval(() => {
       popup_msgs.value.splice(i, 1)
     }
   }
-}, 1000)
+}, 100000)
 
 side_bar_props.value.sub_tw_channels.sort()
 side_bar_props.value.sub_yt_channels.sort()
@@ -919,6 +919,9 @@ div#popup_area {
   left: 25%;
   width: 50%;
   z-index: 4;
+  display: flex;
+  flex-direction: column;
+  place-items: center;
 }
 
 div.popup_msg {
@@ -930,7 +933,7 @@ div.popup_msg {
   margin: 5px;
   pointer-events: all;
   text-align: center;
-  width: auto;
+  display: inline;
 }
 div.popup_msg:hover {
   background-color: rgb(142, 142, 253);
@@ -984,10 +987,7 @@ div.popup_msg.fade_out {
   div#popup_area {
     bottom: auto;
     top: 0px;
-    transform: rotate(180deg);
-  }
-  div.popup_msg {
-    transform: rotate(-180deg);
+    flex-direction: column-reverse;
   }
 
   div.header {
