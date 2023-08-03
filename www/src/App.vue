@@ -475,7 +475,6 @@ function record_scroll() {
   const body = document.getElementById('body')?.parentElement
   if (body != null) {
     scroll_pos.value = body.scrollTop
-    console.log(scroll_pos.value)
   }
 }
 
