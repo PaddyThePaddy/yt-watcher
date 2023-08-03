@@ -469,6 +469,26 @@ function to_top() {
   console.log('totop')
   window.scroll(0, 0)
 }
+let ref_timeout: number | undefined
+function refresh_btn() {
+  update_video_events().then(
+    () => {
+      show_popup('Refreshed')
+      const img = document.getElementById('refresh_img')
+      if (img != null) {
+        if (ref_timeout != null) {
+          clearTimeout(ref_timeout)
+        }
+        img.classList.remove('clicked')
+        img.classList.add('clicked')
+        ref_timeout = setTimeout(() => {
+          img.classList.remove('clicked')
+        }, 500)
+      }
+    },
+    (msg) => show_popup(msg)
+  )
+}
 
 const scroll_pos = ref(0)
 function record_scroll() {
@@ -532,18 +552,9 @@ update_video_events()
         <img class="floating_btn_icon" src="/icons8-menu.svg" />
       </label>
     </div>
-    <div
-      id="refresh_btn"
-      class="header_btn"
-      @click="
-        update_video_events().then(
-          () => show_popup('Refreshed'),
-          (msg) => show_popup(msg)
-        )
-      "
-    >
+    <div id="refresh_btn" class="header_btn" @click="refresh_btn">
       <label style="display: flex">
-        <img class="floating_btn_icon" src="/icons8-refresh.svg" />
+        <img id="refresh_img" class="floating_btn_icon" src="/icons8-refresh.svg" />
       </label>
     </div>
     <div style="flex: 1 1 auto; pointer-events: none; display: flex; flex-direction: row-reverse">
@@ -957,6 +968,14 @@ div.popup_msg:active {
 
 div.popup_msg.fade_out {
   opacity: 0;
+}
+
+img#refresh_img {
+}
+
+img.clicked {
+  transition: transform 0.5s;
+  transform: rotate(180deg);
 }
 
 @media (pointer: none), (pointer: coarse) {
