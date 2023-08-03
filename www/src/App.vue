@@ -34,10 +34,10 @@ let filtered_upcoming_videos: ComputedRef<VideoEvent[]> = computed(() => {
   return upcoming_videos.value.filter(
     (v) =>
       search_bar_val.value.trim().length == 0 ||
-      v.title.indexOf(search_bar_val.value) != -1 ||
-      v.source_name.indexOf(search_bar_val.value) != -1 ||
-      v.source_url.indexOf(search_bar_val.value) != -1 ||
-      v.target_url.indexOf(search_bar_val.value) != -1
+      v.title.toLowerCase().indexOf(search_bar_val.value.toLowerCase()) != -1 ||
+      v.source_name.toLowerCase().indexOf(search_bar_val.value.toLowerCase()) != -1 ||
+      v.source_url.toLowerCase().indexOf(search_bar_val.value.toLowerCase()) != -1 ||
+      v.target_url.toLowerCase().indexOf(search_bar_val.value.toLowerCase()) != -1
   )
 })
 let starting_videos: Ref<VideoEvent[]> = ref([])
@@ -45,10 +45,10 @@ let filtered_starting_videos: ComputedRef<VideoEvent[]> = computed(() => {
   return starting_videos.value.filter(
     (v) =>
       search_bar_val.value.trim().length == 0 ||
-      v.title.indexOf(search_bar_val.value) != -1 ||
-      v.source_name.indexOf(search_bar_val.value) != -1 ||
-      v.source_url.indexOf(search_bar_val.value) != -1 ||
-      v.target_url.indexOf(search_bar_val.value) != -1
+      v.title.toLowerCase().indexOf(search_bar_val.value.toLowerCase()) != -1 ||
+      v.source_name.toLowerCase().indexOf(search_bar_val.value.toLowerCase()) != -1 ||
+      v.source_url.toLowerCase().indexOf(search_bar_val.value.toLowerCase()) != -1 ||
+      v.target_url.toLowerCase().indexOf(search_bar_val.value.toLowerCase()) != -1
   )
 })
 let ongoing_videos: Ref<VideoEvent[]> = ref([])
@@ -56,10 +56,10 @@ let filtered_ongoing_videos: ComputedRef<VideoEvent[]> = computed(() => {
   return ongoing_videos.value.filter(
     (v) =>
       search_bar_val.value.trim().length == 0 ||
-      v.title.indexOf(search_bar_val.value) != -1 ||
-      v.source_name.indexOf(search_bar_val.value) != -1 ||
-      v.source_url.indexOf(search_bar_val.value) != -1 ||
-      v.target_url.indexOf(search_bar_val.value) != -1
+      v.title.toLowerCase().indexOf(search_bar_val.value.toLowerCase()) != -1 ||
+      v.source_name.toLowerCase().indexOf(search_bar_val.value.toLowerCase()) != -1 ||
+      v.source_url.toLowerCase().indexOf(search_bar_val.value.toLowerCase()) != -1 ||
+      v.target_url.toLowerCase().indexOf(search_bar_val.value.toLowerCase()) != -1
   )
 })
 let current_time: Ref<Date> = ref(new Date())
