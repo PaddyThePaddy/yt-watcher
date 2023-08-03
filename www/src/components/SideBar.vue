@@ -137,7 +137,7 @@ function on_sync_key_changed() {
   <ul>
     <li v-for="(ch, idx) in prop.sub_yt_channels" v-bind:key="idx" class="channel_id">
       <button class="del_btn" @click="$emit('unfollow_yt_ch', ch)">x</button>
-      {{ ch }}&nbsp;<a :href="'https://www.youtube.com/' + ch">
+      {{ ch }}&nbsp;<a :href="'https://www.youtube.com/@' + ch">
         <img class="platform_icon" src="/youtube_32x32.png"
       /></a>
     </li>
