@@ -446,7 +446,6 @@ function search_bar_unfocused() {
 function search_bar_changed() {
   yt_channel_state.value = 'none'
   tw_channel_state.value = 'none'
-  to_top()
 }
 document.getElementById('body')!.addEventListener('mousemove', utils.on_mouse_move)
 document.getElementById('body')!.addEventListener('mousedown', utils.on_mouse_move)
@@ -471,6 +470,15 @@ function to_top() {
   window.scroll(0, 0)
 }
 
+const scroll_pos = ref(0)
+function record_scroll() {
+  const body = document.getElementById('body')?.parentElement
+  if (body != null) {
+    scroll_pos.value = body.scrollTop
+    console.log(scroll_pos.value)
+  }
+}
+
 document.getElementById('body')?.addEventListener('keyup', (event) => {
   if (event.key == 's' || event.key == 'S') {
     document.getElementById('search_bar')?.focus()
@@ -483,6 +491,7 @@ document.getElementById('body')?.addEventListener('keyup', (event) => {
 })
 document.getElementById('body')?.addEventListener('touchstart', touch_start, false)
 document.getElementById('body')?.addEventListener('touchmove', touch_move, false)
+window.addEventListener('scroll', record_scroll)
 
 utils.set_sync_key(utils.get_sync_key())
 utils.set_tw_id_list(utils.get_tw_id_list())
@@ -504,11 +513,7 @@ update_video_events()
       @show_popup="show_popup"
     ></SideBar>
   </div>
-  <div
-    class="header"
-    style="background-color: #555; justify-content: center; pointer-events: all"
-    @click="to_top"
-  >
+  <div class="header" style="background-color: #555; justify-content: center; pointer-events: all">
     <input
       type="text"
       v-model="search_bar_val"
@@ -541,19 +546,23 @@ update_video_events()
         <img class="floating_btn_icon" src="/icons8-refresh.svg" />
       </label>
     </div>
-    <div style="flex: 1 1 auto; text-align: right; pointer-events: none">
+    <div style="flex: 1 1 auto; pointer-events: none; display: flex; flex-direction: row-reverse">
       <div
-        class="header_btn"
-        id="cancel_btn"
+        class="header_btn right"
+        @click="to_top"
+        :class="{ show: scroll_pos > 50 }"
+        style="aspect-ratio: 1/1"
+      >
+        <img src="/top-arrow-5-svgrepo-com.svg" style="width: 100%" />
+      </div>
+
+      <div
+        class="header_btn right"
         @click="search_bar_val = ''"
         style="pointer-events: all"
         :class="{ show: search_bar_val != '' }"
       >
-        <button
-          style="height: 1em; background-color: #0000; border: none; color: black; margin: 0px"
-        >
-          X
-        </button>
+        <img src="/cross-small-svgrepo-com.svg" style="width: 100%" />
       </div>
     </div>
   </div>
@@ -902,13 +911,15 @@ span.hdr_floating_btn:active {
   filter: brightness(1.4);
 }
 
-div#cancel_btn {
-  translate: 100% 0;
+div.header_btn.right {
+  translate: 100vw 0;
   transition: translate 0.2s;
+  margin-right: 7px;
+  margin-left: 0px;
 }
 
-div#cancel_btn.show {
-  translate: -2em 0;
+div.header_btn.right.show {
+  translate: 0 0;
 }
 
 div#popup_area {
