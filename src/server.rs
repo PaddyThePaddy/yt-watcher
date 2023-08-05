@@ -16,7 +16,7 @@ use chrono::{DateTime, Timelike, Utc};
 use icalendar::{Alarm, Component, EventLike};
 use serde::{Deserialize, Serialize};
 use tokio::sync::RwLock;
-use warp::Filter;
+use warp::{hyper::Response, Filter};
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct ChannelInfoData {
@@ -377,7 +377,9 @@ pub async fn server_start(config: &crate::Config) {
                         })
                         .map(|e: UpcomingEvent| e.to_ical_event(alarm_enabled)),
                 );
-                cal.done().to_string()
+                Response::builder()
+                    .header("Content-Type", "text/calendar")
+                    .body(cal.done().to_string())
             }
         });
 
