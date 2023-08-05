@@ -16,15 +16,6 @@ static mut REQWEST_CLIENT: Lazy<reqwest::Client> = Lazy::new(|| {
         .unwrap()
 });
 
-#[derive(Debug, Deserialize, Clone, PartialEq, Eq)]
-#[allow(non_camel_case_types)]
-enum Compression {
-    none,
-    gzip,
-    dflate,
-    brotli,
-}
-
 #[derive(Debug, Deserialize, Clone)]
 pub struct Config {
     api_key: String,
@@ -33,18 +24,9 @@ pub struct Config {
     channel_refresh_interval: u64,
     channel_expire_min: i64,
     log_level: String,
-    compression: Compression,
-    tls: Option<Tls>,
     twitch_key: Option<TwAppKey>,
     video_refresh_delay: Option<u64>,
     use_youtube_api_per_hour: u32,
-}
-
-#[derive(Debug, Deserialize, Clone)]
-pub struct Tls {
-    socket: String,
-    cert: String,
-    key: String,
 }
 
 #[derive(Debug, Deserialize, Clone)]

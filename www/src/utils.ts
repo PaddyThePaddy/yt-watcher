@@ -1,11 +1,5 @@
 export const REGEXP_SPECIAL_CHAR = /[!#$%^&*)(+=.<>{}[\]:;'"|~`_-]/g
-export let site_url = document.URL
-if (site_url.endsWith('index.html')) {
-  site_url = site_url.substring(0, site_url.length - 10)
-}
-if (!site_url.endsWith('/')) {
-  site_url += '/'
-}
+export let api_url = 'https://' + window.location.hostname + '/api/'
 
 export type UpcomingEvent = {
   start_date_time: string
@@ -104,7 +98,7 @@ export type ChannelInfo = {
 }
 
 export function load_youtube_channel(query: string): Promise<ChannelInfo> {
-  return fetch(site_url + 'yt-ch?q=' + query)
+  return fetch(api_url + 'yt-ch?q=' + query)
     .then((resp) => resp.json())
     .then((resp: any) => {
       return new Promise((resolve, reject) => {
@@ -122,7 +116,7 @@ export function load_youtube_channel(query: string): Promise<ChannelInfo> {
 }
 
 export function load_twitch_channel(query: string): Promise<ChannelInfo> {
-  return fetch(site_url + 'tw-ch?q=' + query)
+  return fetch(api_url + 'tw-ch?q=' + query)
     .then((resp) => resp.json())
     .then((resp: any) => {
       return new Promise((resolve, reject) => {
@@ -148,7 +142,7 @@ export function get_video_data(
       reject('No tracking channel')
     })
   }
-  let url = site_url + 'data?'
+  let url = api_url + 'data?'
   if (yt_ch_list.length != 0) {
     url += 'yt-ch=' + yt_ch_list.join(',')
   }
@@ -167,7 +161,7 @@ export function verify_sync_key(key: string): boolean {
 }
 
 export function new_sync_key(): Promise<string | undefined | void> {
-  return fetch(site_url + 'sync/new')
+  return fetch(api_url + 'sync/new')
     .then((resp) => resp.json())
     .then((resp) => {
       return resp.key
@@ -181,7 +175,7 @@ export function push_sync_key(sync_key: string, yt_ch: string[], tw_ch: string[]
       reject('Invalid sync key')
     })
   }
-  let url = site_url + 'sync/push?key=' + sync_key
+  let url = api_url + 'sync/push?key=' + sync_key
   if (yt_ch.length != 0) {
     url += '&yt-ch=' + yt_ch.join(',')
   }
@@ -201,7 +195,7 @@ export function pull_sync_key(sync_key: string): Promise<{ yt_ch: string[]; tw_c
     console.log('invalid sync key')
     return new Promise((_, reject) => reject())
   }
-  return fetch(site_url + 'sync/pull?key=' + get_sync_key())
+  return fetch(api_url + 'sync/pull?key=' + get_sync_key())
     .then((resp) => {
       return resp.json()
     })
@@ -230,7 +224,7 @@ export function notice_yt_video(value: string) {
       id_list.push(s)
     }
   }
-  const url = site_url + 'notice-yt-video?id=' + id_list
+  const url = api_url + 'notice-yt-video?id=' + id_list
   return fetch(url)
     .then((resp) => resp.json())
     .then((resp) => {

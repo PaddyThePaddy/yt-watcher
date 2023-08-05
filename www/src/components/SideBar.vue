@@ -37,7 +37,7 @@ function copy_calendar_url() {
     emit('show_popup', 'No id for calendar to copy')
     return
   }
-  let url = utils.site_url + 'cal?'
+  let url = utils.api_url + 'cal?'
   if (prop.sub_yt_channels.length != 0) {
     url += 'yt-ch=' + prop.sub_yt_channels.join(',')
   }
@@ -62,7 +62,7 @@ function copy_synced_calendar_url() {
     emit('show_popup', 'Invalid sync key')
     return
   }
-  let url = utils.site_url + 'cal?key=' + prop.sync_key
+  let url = utils.api_url + 'cal?key=' + prop.sync_key
   if (alarm_enabled.value) {
     url += '&alarm=true'
   }

@@ -10,7 +10,7 @@ use crate::{
     sync,
     tw_api::{structs::*, *},
     yt_api::{structs::*, *},
-    Compression, TwAppKey,
+    TwAppKey,
 };
 use chrono::{DateTime, Timelike, Utc};
 use icalendar::{Alarm, Component, EventLike};
@@ -40,16 +40,6 @@ pub async fn server_start(config: &crate::Config) {
         Ok(s) => s,
         Err(e) => panic!("Invalid socket: {}", e),
     };
-    let tls_info = config.tls.clone().map(|tls| {
-        (
-            match SocketAddr::from_str(&tls.socket) {
-                Ok(s) => s,
-                Err(e) => panic!("Invalid socket: {}", e),
-            },
-            tls.cert,
-            tls.key,
-        )
-    });
     let server_data = Arc::new(RwLock::new(
         ServerData::new(
             &config.api_key,
@@ -532,157 +522,18 @@ pub async fn server_start(config: &crate::Config) {
             data.update_channel_info().await;
         }
     });
-    match config.compression {
-        Compression::none => {
-            if let Some((https_socket, cert, key)) = tls_info {
-                let routes = warp::get().and(
-                    warp::fs::dir("www/dist")
-                        .or(get_yt_channel_info)
-                        .or(get_data_endpoint)
-                        .or(get_calendar_endpoint)
-                        .or(get_tw_channel_info)
-                        .or(notice_yt_video_endpoint)
-                        .or(sync_key_endpoint),
-                );
-                futures::join!(
-                    warp::serve(routes.clone()).run(http_socket),
-                    warp::serve(routes)
-                        .tls()
-                        .cert_path(cert)
-                        .key_path(key)
-                        .run(https_socket),
-                );
-            } else {
-                warp::serve(
-                    warp::get().and(
-                        warp::fs::dir("www/dist")
-                            .or(get_yt_channel_info)
-                            .or(get_data_endpoint)
-                            .or(get_calendar_endpoint)
-                            .or(get_tw_channel_info)
-                            .or(notice_yt_video_endpoint)
-                            .or(sync_key_endpoint),
-                    ),
-                )
-                .run(http_socket)
-                .await;
-            }
-        }
-        Compression::brotli => {
-            let compression = warp::filters::compression::brotli();
-            if let Some((https_socket, cert, key)) = tls_info {
-                let routes = warp::get().and(
-                    warp::fs::dir("www/dist")
-                        .with(compression)
-                        .or(get_yt_channel_info.with(compression))
-                        .or(get_data_endpoint.with(compression))
-                        .or(get_tw_channel_info.with(compression))
-                        .or(sync_key_endpoint.with(compression))
-                        .or(notice_yt_video_endpoint.with(compression))
-                        .or(get_calendar_endpoint),
-                );
-                futures::join!(
-                    warp::serve(routes.clone()).run(http_socket),
-                    warp::serve(routes)
-                        .tls()
-                        .cert_path(cert)
-                        .key_path(key)
-                        .run(https_socket),
-                );
-            } else {
-                warp::serve(
-                    warp::get().and(
-                        warp::fs::dir("www/dist")
-                            .with(compression)
-                            .or(get_yt_channel_info.with(compression))
-                            .or(get_data_endpoint.with(compression))
-                            .or(get_tw_channel_info.with(compression))
-                            .or(sync_key_endpoint.with(compression))
-                            .or(notice_yt_video_endpoint.with(compression))
-                            .or(get_calendar_endpoint),
-                    ),
-                )
-                .run(http_socket)
-                .await;
-            }
-        }
-        Compression::dflate => {
-            let compression = warp::filters::compression::deflate();
-            if let Some((https_socket, cert, key)) = tls_info {
-                let routes = warp::get().and(
-                    warp::fs::dir("www/dist")
-                        .with(compression)
-                        .or(get_yt_channel_info.with(compression))
-                        .or(get_data_endpoint.with(compression))
-                        .or(get_tw_channel_info.with(compression))
-                        .or(sync_key_endpoint.with(compression))
-                        .or(notice_yt_video_endpoint.with(compression))
-                        .or(get_calendar_endpoint),
-                );
-                futures::join!(
-                    warp::serve(routes.clone()).run(http_socket),
-                    warp::serve(routes)
-                        .tls()
-                        .cert_path(cert)
-                        .key_path(key)
-                        .run(https_socket),
-                );
-            } else {
-                warp::serve(
-                    warp::get().and(
-                        warp::fs::dir("www/dist")
-                            .with(compression)
-                            .or(get_yt_channel_info.with(compression))
-                            .or(get_data_endpoint.with(compression))
-                            .or(get_tw_channel_info.with(compression))
-                            .or(sync_key_endpoint.with(compression))
-                            .or(notice_yt_video_endpoint.with(compression))
-                            .or(get_calendar_endpoint),
-                    ),
-                )
-                .run(http_socket)
-                .await;
-            }
-        }
-        Compression::gzip => {
-            let compression = warp::filters::compression::gzip();
-            if let Some((https_socket, cert, key)) = tls_info {
-                let routes = warp::get().and(
-                    warp::fs::dir("www/dist")
-                        .with(compression)
-                        .or(get_yt_channel_info.with(compression))
-                        .or(get_data_endpoint.with(compression))
-                        .or(get_tw_channel_info.with(compression))
-                        .or(sync_key_endpoint.with(compression))
-                        .or(notice_yt_video_endpoint.with(compression))
-                        .or(get_calendar_endpoint),
-                );
-                futures::join!(
-                    warp::serve(routes.clone()).run(http_socket),
-                    warp::serve(routes)
-                        .tls()
-                        .cert_path(cert)
-                        .key_path(key)
-                        .run(https_socket),
-                );
-            } else {
-                warp::serve(
-                    warp::get().and(
-                        warp::fs::dir("www/dist")
-                            .with(compression)
-                            .or(get_yt_channel_info.with(compression))
-                            .or(get_data_endpoint.with(compression))
-                            .or(get_tw_channel_info.with(compression))
-                            .or(sync_key_endpoint.with(compression))
-                            .or(notice_yt_video_endpoint.with(compression))
-                            .or(get_calendar_endpoint),
-                    ),
-                )
-                .run(http_socket)
-                .await;
-            }
-        }
-    }
+    warp::serve(
+        warp::get().and(
+            get_yt_channel_info
+                .or(get_data_endpoint)
+                .or(get_calendar_endpoint)
+                .or(get_tw_channel_info)
+                .or(notice_yt_video_endpoint)
+                .or(sync_key_endpoint),
+        ),
+    )
+    .run(http_socket)
+    .await;
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -1063,9 +914,9 @@ impl ServerData {
                             if v == c.first_video_after_all_stream {
                                 break;
                             }
-                                if !unchecked_video_ids.contains(&v) {
-                                    unchecked_video_ids.push(v);
-                                }
+                            if !unchecked_video_ids.contains(&v) {
+                                unchecked_video_ids.push(v);
+                            }
                         }
                     }
                 }
@@ -1089,11 +940,23 @@ impl ServerData {
                         }
                         if snippet.liveBroadcastContent == "none" {
                             if !first_video_after_all_stream_map.contains_key(&snippet.channelId) {
-                                log::debug!("Channel {}({}) does not has first video, insert {}({})", snippet.channelTitle, snippet.channelId, snippet.title, v.id);
+                                log::debug!(
+                                    "Channel {}({}) does not has first video, insert {}({})",
+                                    snippet.channelTitle,
+                                    snippet.channelId,
+                                    snippet.title,
+                                    v.id
+                                );
                                 first_video_after_all_stream_map
                                     .insert(snippet.channelId.clone(), v.id.clone());
                             } else {
-                                log::debug!("Channel {}({}) alread has first video. Skippet video {}({})", snippet.channelTitle, snippet.channelId, snippet.title, v.id);
+                                log::debug!(
+                                    "Channel {}({}) alread has first video. Skippet video {}({})",
+                                    snippet.channelTitle,
+                                    snippet.channelId,
+                                    snippet.title,
+                                    v.id
+                                );
                             }
                         } else {
                             first_video_after_all_stream_map.remove(&snippet.channelId);

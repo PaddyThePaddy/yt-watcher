@@ -39,7 +39,7 @@ const ch_help = `在搜尋框輸入以下內容<br /><br />
         https://www.twitch.tv/restiafps <br />
         restiafps <br /><br />
         可以用側邊欄產生的行事曆網址一次匯入所有頻道:<br />
-        ${utils.site_url}cal?yt-ch=...&tw-ch=...<br /><br />
+        ${utils.api_url}cal?yt-ch=...&tw-ch=...<br /><br />
         讓 server "注意"到非公開 / 過於老舊的直播待機室:<br />
         https://www.youtube.com/watch?v=k7dTnCl2pVA<br />
         k7dTnCl2pVA<br />
@@ -53,7 +53,7 @@ const en_help = `To add youtube channel: <br />
         https://www.twitch.tv/restiafps <br />
         restiafps <br /><br />
         To import list, copy calendar url produced by this tool:<br />
-        ${utils.site_url}cal?yt-ch=...&tw-ch=...<br /><br />
+        ${utils.api_url}cal?yt-ch=...&tw-ch=...<br /><br />
         To let the server "notice" a unlisted / old waiting room:<br />
         https://www.youtube.com/watch?v=k7dTnCl2pVA<br />
         k7dTnCl2pVA<br />
@@ -434,7 +434,7 @@ const is_twitch_channel_url: ComputedRef<boolean> = computed(() =>
 )
 
 const IMPORT_URL_PATTERN = new RegExp(
-  utils.site_url.replace(utils.REGEXP_SPECIAL_CHAR, '\\$&') + 'cal?'
+  utils.api_url.replace(utils.REGEXP_SPECIAL_CHAR, '\\$&') + 'cal?'
 )
 const is_import_url: ComputedRef<boolean> = computed(() =>
   IMPORT_URL_PATTERN.test(search_bar_val.value)
