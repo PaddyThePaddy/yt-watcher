@@ -48,10 +48,11 @@ div.video_card {
   border-radius: 8px;
   transition: background-color 0.1s;
   background-clip: padding-box;
+  background: var(--background-color);
 }
 
 div.video_card:hover {
-  background-color: #ffffff10;
+  background-color: #333333;
 }
 
 div.twitch {
@@ -119,6 +120,18 @@ img.video_thumbnail {
   border-radius: 5px;
   overflow-clip-margin: content-box;
   overflow: clip;
+  width: 320px;
+  height: 180px;
+  transition: transform 0.3s;
+}
+
+@media (pointer: fine) {
+  img.video_thumbnail {
+    transition: transform 0.3s;
+  }
+  img.video_thumbnail:hover {
+    transform: scale(2);
+  }
 }
 </style>
 

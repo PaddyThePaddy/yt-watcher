@@ -3,6 +3,7 @@
 
 :root {
   --menu-width: 350px;
+  --background-color: #222222;
 }
 
 html {
@@ -12,7 +13,7 @@ html {
 body {
   overflow-x: hidden;
   font-family: 'Noto Sans TC', sans-serif;
-  background-color: #222222;
+  background-color: var(--background-color);
   color: #dddddd;
   height: 100vh;
   width: 100vw;

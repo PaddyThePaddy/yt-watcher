@@ -765,7 +765,7 @@ impl TryFrom<(&Video::Resource, &ServerData)> for UpcomingEvent {
                     "upcoming" => on_going = false,
                     _ => return Err(ConvertToUpcomingEventError::Unknown(value.0.id.clone())),
                 }
-                let thumbnail_url = if let Some(t) = snippet.thumbnails.get("medium") {
+                let thumbnail_url = if let Some(t) = snippet.thumbnails.get("maxres") {
                     t
                 } else {
                     return Err(ConvertToUpcomingEventError::MissingInformation(
