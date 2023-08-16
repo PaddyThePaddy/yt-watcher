@@ -59,39 +59,54 @@ const en_help = `To add youtube channel: <br />
         k7dTnCl2pVA<br />
         https://youtu.be/k7dTnCl2pVA<br /><br />
         Click for Chinese / 點擊以顯示中文`
-let upcoming_videos: Ref<VideoEvent[]> = ref([])
-let filtered_upcoming_videos: ComputedRef<VideoEvent[]> = computed(() => {
-  return upcoming_videos.value.filter(
+
+function filter_by_search_str(v: VideoEvent): boolean {
+  return (
+    search_bar_val.value.trim().length == 0 ||
+    v.title.toLowerCase().indexOf(search_bar_val.value.toLowerCase()) != -1 ||
+    v.source_name.toLowerCase().indexOf(search_bar_val.value.toLowerCase()) != -1 ||
+    v.source_url.toLowerCase().indexOf(search_bar_val.value.toLowerCase()) != -1 ||
+    v.target_url.toLowerCase().indexOf(search_bar_val.value.toLowerCase()) != -1
+  )
+}
+
+let videos_list: Ref<VideoEvent[]> = ref([])
+let ongoing_videos: ComputedRef<VideoEvent[]> = computed(() => {
+  return videos_list.value.filter((v) => v.ongoing).filter(filter_by_search_str)
+})
+let starting_videos: ComputedRef<VideoEvent[]> = computed(() => {
+  return videos_list.value.filter((v) => !v.ongoing && v.start_time < current_time.value)
+})
+let upcoming_1h_videos: ComputedRef<VideoEvent[]> = computed(() => {
+  return videos_list.value.filter(
     (v) =>
-      search_bar_val.value.trim().length == 0 ||
-      v.title.toLowerCase().indexOf(search_bar_val.value.toLowerCase()) != -1 ||
-      v.source_name.toLowerCase().indexOf(search_bar_val.value.toLowerCase()) != -1 ||
-      v.source_url.toLowerCase().indexOf(search_bar_val.value.toLowerCase()) != -1 ||
-      v.target_url.toLowerCase().indexOf(search_bar_val.value.toLowerCase()) != -1
+      !v.ongoing &&
+      v.start_time > current_time.value &&
+      v.start_time.getTime() - current_time.value.getTime() < 1000 * 60 * 60
   )
 })
-let starting_videos: Ref<VideoEvent[]> = ref([])
-let filtered_starting_videos: ComputedRef<VideoEvent[]> = computed(() => {
-  return starting_videos.value.filter(
+let upcoming_3h_videos: ComputedRef<VideoEvent[]> = computed(() => {
+  return videos_list.value.filter(
     (v) =>
-      search_bar_val.value.trim().length == 0 ||
-      v.title.toLowerCase().indexOf(search_bar_val.value.toLowerCase()) != -1 ||
-      v.source_name.toLowerCase().indexOf(search_bar_val.value.toLowerCase()) != -1 ||
-      v.source_url.toLowerCase().indexOf(search_bar_val.value.toLowerCase()) != -1 ||
-      v.target_url.toLowerCase().indexOf(search_bar_val.value.toLowerCase()) != -1
+      !v.ongoing &&
+      v.start_time.getTime() - current_time.value.getTime() > 1000 * 60 * 60 &&
+      v.start_time.getTime() - current_time.value.getTime() < 1000 * 60 * 60 * 3
   )
 })
-let ongoing_videos: Ref<VideoEvent[]> = ref([])
-let filtered_ongoing_videos: ComputedRef<VideoEvent[]> = computed(() => {
-  return ongoing_videos.value.filter(
+let upcoming_1d_videos: ComputedRef<VideoEvent[]> = computed(() => {
+  return videos_list.value.filter(
     (v) =>
-      search_bar_val.value.trim().length == 0 ||
-      v.title.toLowerCase().indexOf(search_bar_val.value.toLowerCase()) != -1 ||
-      v.source_name.toLowerCase().indexOf(search_bar_val.value.toLowerCase()) != -1 ||
-      v.source_url.toLowerCase().indexOf(search_bar_val.value.toLowerCase()) != -1 ||
-      v.target_url.toLowerCase().indexOf(search_bar_val.value.toLowerCase()) != -1
+      !v.ongoing &&
+      v.start_time.getTime() - current_time.value.getTime() > 1000 * 60 * 60 * 3 &&
+      v.start_time.getTime() - current_time.value.getTime() < 1000 * 60 * 60 * 24
   )
 })
+let remaining_videos: ComputedRef<VideoEvent[]> = computed(() => {
+  return videos_list.value.filter(
+    (v) => !v.ongoing && v.start_time.getTime() - current_time.value.getTime() > 1000 * 60 * 60 * 24
+  )
+})
+
 let current_time: Ref<Date> = ref(new Date())
 const sidebar_control = ref(false)
 const sidebar_reactive_style: ComputedRef<StyleValue> = computed(() => {
@@ -250,9 +265,7 @@ function follow_twitch() {
 }
 
 function update_video_events() {
-  const new_ongoing_videos: VideoEvent[] = []
-  const new_starting_videos: VideoEvent[] = []
-  const new_upcoming_videos: VideoEvent[] = []
+  const new_videos: VideoEvent[] = []
   console.log('Updating video list')
   return utils
     .get_video_data(side_bar_props.value.sub_yt_channels, side_bar_props.value.sub_tw_channels)
@@ -287,17 +300,9 @@ function update_video_events() {
           source_url: source_url,
           source_type: source
         }
-        if (event.ongoing) {
-          new_ongoing_videos.push(video)
-        } else if (start_time < now) {
-          new_starting_videos.push(video)
-        } else {
-          new_upcoming_videos.push(video)
-        }
+        new_videos.push(video)
       }
-      ongoing_videos.value = new_ongoing_videos
-      starting_videos.value = new_starting_videos
-      upcoming_videos.value = new_upcoming_videos
+      videos_list.value = new_videos
     })
 }
 
@@ -698,16 +703,17 @@ update_video_events()
   </div>
   <div v-else>
     <h2>
-      Ongoing (<span v-if="ongoing_videos.length == filtered_ongoing_videos.length">{{
-        ongoing_videos.length
-      }}</span
-      ><span v-if="ongoing_videos.length != filtered_ongoing_videos.length"
-        >{{ filtered_ongoing_videos.length }} / {{ ongoing_videos.length }}</span
+      Ongoing (<span
+        v-if="ongoing_videos.filter(filter_by_search_str).length == ongoing_videos.length"
+        >{{ ongoing_videos.length }}</span
+      ><span v-else
+        >{{ ongoing_videos.filter(filter_by_search_str).length }} /
+        {{ ongoing_videos.length }}</span
       >)
     </h2>
     <div class="video_container">
       <VideoComponent
-        v-for="(video, index) in filtered_ongoing_videos"
+        v-for="(video, index) in ongoing_videos.filter(filter_by_search_str)"
         v-bind="video"
         :current_time="current_time"
         v-bind:key="index"
@@ -715,16 +721,17 @@ update_video_events()
     </div>
 
     <h2 v-if="starting_videos.length != 0">
-      Starting (<span v-if="starting_videos.length == filtered_starting_videos.length">{{
-        starting_videos.length
-      }}</span
-      ><span v-if="starting_videos.length != filtered_starting_videos.length"
-        >{{ filtered_starting_videos.length }} / {{ starting_videos.length }}</span
+      Starting (<span
+        v-if="starting_videos.filter(filter_by_search_str).length == starting_videos.length"
+        >{{ starting_videos.length }}</span
+      ><span v-else
+        >{{ starting_videos.filter(filter_by_search_str).length }} /
+        {{ starting_videos.length }}</span
       >)
     </h2>
     <div class="video_container" v-if="starting_videos.length != 0">
       <VideoComponent
-        v-for="(video, index) in filtered_starting_videos"
+        v-for="(video, index) in starting_videos.filter(filter_by_search_str)"
         v-bind="video"
         :current_time="current_time"
         v-bind:key="index"
@@ -732,16 +739,75 @@ update_video_events()
     </div>
 
     <h2>
-      Upcoming (<span v-if="upcoming_videos.length == filtered_upcoming_videos.length">{{
-        upcoming_videos.length
-      }}</span
-      ><span v-if="upcoming_videos.length != filtered_upcoming_videos.length"
-        >{{ filtered_upcoming_videos.length }} / {{ upcoming_videos.length }}</span
+      Upcoming in 1 hour (<span
+        v-if="upcoming_1h_videos.filter(filter_by_search_str).length == upcoming_1h_videos.length"
+        >{{ upcoming_1h_videos.length }}</span
+      >
+      <span v-else
+        >{{ upcoming_1h_videos.filter(filter_by_search_str).length }} /
+        {{ upcoming_1h_videos.length }}</span
       >)
     </h2>
     <div class="video_container">
       <VideoComponent
-        v-for="(video, index) in filtered_upcoming_videos"
+        v-for="(video, index) in upcoming_1h_videos.filter(filter_by_search_str)"
+        v-bind="video"
+        :current_time="current_time"
+        v-bind:key="index"
+      ></VideoComponent>
+    </div>
+
+    <h2>
+      Upcoming in 3 hours (<span
+        v-if="upcoming_3h_videos.filter(filter_by_search_str).length == upcoming_3h_videos.length"
+        >{{ upcoming_3h_videos.length }}</span
+      >
+      <span v-else
+        >{{ upcoming_3h_videos.filter(filter_by_search_str).length }} /
+        {{ upcoming_3h_videos.length }}</span
+      >)
+    </h2>
+    <div class="video_container">
+      <VideoComponent
+        v-for="(video, index) in upcoming_3h_videos.filter(filter_by_search_str)"
+        v-bind="video"
+        :current_time="current_time"
+        v-bind:key="index"
+      ></VideoComponent>
+    </div>
+
+    <h2>
+      Upcoming in 1 day (<span
+        v-if="upcoming_1d_videos.filter(filter_by_search_str).length == upcoming_1d_videos.length"
+        >{{ upcoming_1d_videos.length }}</span
+      >
+      <span v-else
+        >{{ upcoming_1d_videos.filter(filter_by_search_str).length }} /
+        {{ upcoming_1d_videos.length }}</span
+      >)
+    </h2>
+    <div class="video_container">
+      <VideoComponent
+        v-for="(video, index) in upcoming_1d_videos.filter(filter_by_search_str)"
+        v-bind="video"
+        :current_time="current_time"
+        v-bind:key="index"
+      ></VideoComponent>
+    </div>
+
+    <h2>
+      Upcoming (<span
+        v-if="remaining_videos.filter(filter_by_search_str).length == remaining_videos.length"
+        >{{ remaining_videos.length }}</span
+      >
+      <span v-else
+        >{{ remaining_videos.filter(filter_by_search_str).length }} /
+        {{ remaining_videos.length }}</span
+      >)
+    </h2>
+    <div class="video_container">
+      <VideoComponent
+        v-for="(video, index) in remaining_videos.filter(filter_by_search_str)"
         v-bind="video"
         :current_time="current_time"
         v-bind:key="index"
