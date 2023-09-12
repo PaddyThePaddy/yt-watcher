@@ -686,9 +686,11 @@ impl UpcomingEvent {
         match &self.source {
             EventSource::YoutubeChannel(c) => {
                 description += &format!("{}\n{}\n\n", c.title, c.custom_url);
+                builder.location(&format!("{}@Youtube", c.title));
             }
             EventSource::TwitchChannel(c) => {
                 description += &format!("{}({})\n\n", c.title, c.login);
+                builder.location(&format!("{}@Twitch", c.title));
             }
         }
         description += &self.description;
