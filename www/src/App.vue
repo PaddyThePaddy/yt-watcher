@@ -738,7 +738,7 @@ update_video_events()
       ></VideoComponent>
     </div>
 
-    <h2>
+    <h2 v-if="upcoming_1h_videos.length != 0">
       Upcoming in 1 hour (<span
         v-if="upcoming_1h_videos.filter(filter_by_search_str).length == upcoming_1h_videos.length"
         >{{ upcoming_1h_videos.length }}</span
@@ -748,7 +748,7 @@ update_video_events()
         {{ upcoming_1h_videos.length }}</span
       >)
     </h2>
-    <div class="video_container">
+    <div class="video_container" v-if="upcoming_1h_videos.length != 0">
       <VideoComponent
         v-for="(video, index) in upcoming_1h_videos.filter(filter_by_search_str)"
         v-bind="video"
@@ -757,7 +757,7 @@ update_video_events()
       ></VideoComponent>
     </div>
 
-    <h2>
+    <h2 v-if="upcoming_3h_videos.length != 0">
       Upcoming in 3 hours (<span
         v-if="upcoming_3h_videos.filter(filter_by_search_str).length == upcoming_3h_videos.length"
         >{{ upcoming_3h_videos.length }}</span
@@ -767,7 +767,7 @@ update_video_events()
         {{ upcoming_3h_videos.length }}</span
       >)
     </h2>
-    <div class="video_container">
+    <div class="video_container" v-if="upcoming_3h_videos.length != 0">
       <VideoComponent
         v-for="(video, index) in upcoming_3h_videos.filter(filter_by_search_str)"
         v-bind="video"
@@ -776,7 +776,7 @@ update_video_events()
       ></VideoComponent>
     </div>
 
-    <h2>
+    <h2 v-if="upcoming_1d_videos.length != 0">
       Upcoming in 1 day (<span
         v-if="upcoming_1d_videos.filter(filter_by_search_str).length == upcoming_1d_videos.length"
         >{{ upcoming_1d_videos.length }}</span
@@ -786,7 +786,7 @@ update_video_events()
         {{ upcoming_1d_videos.length }}</span
       >)
     </h2>
-    <div class="video_container">
+    <div class="video_container" v-if="upcoming_1d_videos.length != 0">
       <VideoComponent
         v-for="(video, index) in upcoming_1d_videos.filter(filter_by_search_str)"
         v-bind="video"
