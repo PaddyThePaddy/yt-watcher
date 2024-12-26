@@ -75,7 +75,10 @@ let ongoing_videos: ComputedRef<VideoEvent[]> = computed(() => {
   return videos_list.value.filter((v) => v.ongoing).filter(filter_by_search_str)
 })
 let starting_videos: ComputedRef<VideoEvent[]> = computed(() => {
-  return videos_list.value.filter((v) => !v.ongoing && v.start_time < current_time.value)
+  return videos_list.value.filter((v) => !v.ongoing && v.start_time < current_time.value && current_time.value.getTime() - v.start_time.getTime() < 1000 * 60 * 60 * 6)
+})
+let deprecated_videos: ComputedRef<VideoEvent[]> = computed(() => {
+  return videos_list.value.filter((v) => !v.ongoing && v.start_time < current_time.value && current_time.value.getTime() - v.start_time.getTime() > 1000 * 60 * 60 * 6)
 })
 let upcoming_1h_videos: ComputedRef<VideoEvent[]> = computed(() => {
   return videos_list.value.filter(
@@ -428,7 +431,7 @@ const is_youtube_video_url: ComputedRef<boolean> = computed(() =>
 )
 
 const YT_CHANNEL_PATTERN =
-  /^([\w\d_-]+|https:\/\/(www.)?youtube.com\/@[\w\d_-]+|https:\/\/www.youtube.com\/channel\/[\w\d_-]+)$/
+  /^([\w\d_\-\.]+|https:\/\/(www.)?youtube.com\/@[\w\d_\-\.]+|https:\/\/www.youtube.com\/channel\/[\w\d_\-\.]+)$/
 const is_youtube_channel_url: ComputedRef<boolean> = computed(() =>
   YT_CHANNEL_PATTERN.test(search_bar_val.value)
 )
@@ -813,7 +816,28 @@ update_video_events()
         v-bind:key="index"
       ></VideoComponent>
     </div>
+
+  <h2>
+      Deprecated Streams (<span
+        v-if="deprecated_videos.filter(filter_by_search_str).length == deprecated_videos.length"
+        >{{ deprecated_videos.length }}</span
+      >
+      <span v-else
+        >{{ deprecated_videos.filter(filter_by_search_str).length }} /
+        {{ deprecated_videos.length }}</span
+      >)
+    </h2>
+    <div class="video_container">
+      <VideoComponent
+        v-for="(video, index) in deprecated_videos.filter(filter_by_search_str)"
+        v-bind="video"
+        :current_time="current_time"
+        v-bind:key="index"
+      ></VideoComponent>
+    </div>
   </div>
+
+
   <div id="footer"></div>
   <div
     id="menu_remaining_area"
